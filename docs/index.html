@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paranormix - AI Investigator</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Paranormix</h1>
+            <p class="subtitle">AI-Powered Paranormal Narrative Investigation</p>
+        </header>
+
+        <main class="chat-container">
+            <!-- Central Chat Panel -->
+            <section class="chat-panel" id="chatPanel">
+                <div class="chat-header">
+                    <div class="bot-info">
+                        <div class="bot-avatar">P</div>
+                        <div class="bot-status">
+                            <span class="bot-name">Paranormix (AI Investigator)</span>
+                            <span class="status-indicator">Online</span>
+                        </div>
+                    </div>
+                    <button id="resetBtn" class="reset-btn">Reset Case</button>
+                </div>
+                
+                <div id="chatMessages" class="chat-messages">
+                    <div class="chat-message ai">
+                        <div class="message-bubble ai">Welcome. I am Paranormix, your autonomous paranormal narrative investigator. 
+Please share a narrative of supernatural events, and I will perform a machine learning analysis to classify the phenomena.</div>
+                    </div>
+                </div>
+
+                <div id="suggestedQuestions" class="suggested-questions" style="display:none;">
+                    <p class="suggested-label">Suggested follow-ups:</p>
+                    <div id="suggestedButtons"></div>
+                </div>
+                
+                <div class="chat-input-area">
+                    <textarea 
+                        id="chatInput" 
+                        placeholder="Paste a narrative (at least 50 characters) or ask a question..."
+                        rows="1"
+                    ></textarea>
+                    <button id="chatSendBtn" disabled>
+                        <svg viewBox="0 0 24 24" width="24" height="24">
+                            <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="chat-footer">
+                    <span id="turnCounter">Investigation depth: 0/5</span>
+                    <span class="disclaimer">Powered by Llama 3 & Scikit-Learn</span>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Results Template (Hidden, used by JS to inject analysis into bubbles) -->
+    <template id="reportTemplate">
+        <div class="investigation-report">
+            <div class="report-header">INVESTIGATION REPORT</div>
+            <div class="report-main">
+                <div class="report-field">
+                    <span class="field-label">Primary Entity:</span>
+                    <span class="field-value highlight" id="reportPrediction"></span>
+                </div>
+                <div class="report-field">
+                    <span class="field-label">Confidence:</span>
+                    <span class="field-value" id="reportConfidence"></span>
+                </div>
+                <div class="report-signals">
+                    <span class="field-label">Detected Signals:</span>
+                    <div class="signal-tags" id="reportSignals"></div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script src="app.js"></script>
+</body>
+</html>
