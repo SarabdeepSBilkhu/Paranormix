@@ -1,6 +1,6 @@
 # Paranormix - AI Investigator Chatbot
 
-A hybrid machine learning and LLM-powered system for analyzing and investigating paranormal narratives. Paranormix combines the predictive grounding of a scikit-learn classifier with the conversational intelligence of Groq's Llama 3 models.
+A hybrid machine learning and LLM-powered system for analyzing and investigating paranormal narratives. Paranormix combines the predictive grounding of a scikit-learn classifier with the conversational intelligence of pluggable LLMs.
 
 ## 🚀 Overview
 
@@ -36,7 +36,7 @@ Paranormix/
 ### Prerequisites
 
 - **Python 3.9+**
-- **Groq API Key**: Obtain a free key from [Groq Console](https://console.groq.com/).
+- **LLM API Key**: Supports Groq (default), OpenAI, or Gemini.
 
 ### Installation
 
@@ -62,11 +62,16 @@ Paranormix/
    uvicorn src.backend.main:app --reload
    ```
 2. **Open the interface**:
-   Launch `http://localhost:8000/app/index.html` in your browser.
+   Launch `http://localhost:8000/app/index.html` in your browser. (In production, the app is served directly at the root).
 3. **Investigate**:
    - Paste a story (e.g., "I heard footsteps in the attic and my door slammed shut.")
    - Review the **Investigation Report** card.
    - Ask follow-up questions: _"Why did you flag this as poltergeist?"_
+
+## 🌐 Live Deployment
+
+The project is hosted as a unified full-stack application on Railway:
+`https://paranormix-production.up.railway.app`
 
 ## 🧪 Testing
 

@@ -35,6 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     sendBtn.addEventListener('click', sendMessage);
     resetBtn.addEventListener('click', resetInvestigation);
+    // Live Deployment Configuration
+    const API_BASE_URL = "https://paranormix-production.up.railway.app";
 
     async function sendMessage(text = null) {
         // Ensure we handle the case where 'text' is a DOM Event (from event listeners)
@@ -42,11 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!message || isProcessing) return;
 
-        // Configuration for Live Deployment
-        // In local dev, it uses relative paths. For GitHub Pages, it can be set via console:
-        // localStorage.setItem('paranormix_api_url', 'https://your-backend.up.railway.app')
-        const baseUrl = localStorage.getItem('paranormix_api_url') || '';
-        const apiUrl = `${baseUrl}/chat`;
+        const apiUrl = `${API_BASE_URL}/chat`;
 
         // Clear input
         if (!text) {

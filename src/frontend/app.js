@@ -36,11 +36,18 @@ document.addEventListener('DOMContentLoaded', () => {
     sendBtn.addEventListener('click', sendMessage);
     resetBtn.addEventListener('click', resetInvestigation);
 
+    // Live Deployment Configuration
+    // In a unified full-stack deployment (Railway), the frontend is served from the same origin.
+    // Use an empty string for relative paths, which is the architectural best practice.
+    const API_BASE_URL = "";
+
     async function sendMessage(text = null) {
         // Ensure we handle the case where 'text' is a DOM Event (from event listeners)
         const message = (typeof text === 'string') ? text : chatInput.value.trim();
         
         if (!message || isProcessing) return;
+
+        const apiUrl = `${API_BASE_URL}/chat`;
 
         // Clear input
         if (!text) {
@@ -57,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const loadingDiv = appendMessage('ai', 'Investigating...', true);
         
         try {
-            const response = await fetch('/chat', {
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

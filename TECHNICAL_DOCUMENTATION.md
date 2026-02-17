@@ -2,7 +2,7 @@
 
 ## 1. Project Vision
 
-Paranormix is a hybrid AI system designed for the analysis and investigation of paranormal narratives. It bridges the gap between deterministic Machine Learning (NLP) and generative Large Language Models (LLMs) to provide an "Explainable AI" experience.
+Paranormix is a research-oriented AI system designed for the analysis and investigation of paranormal narratives. It follows an "Explainable AI" (XAI) methodology, where a deterministic Machine Learning (NLP) engine handles classification, and a Large Language Model (LLM) provides conversational interpretation.
 
 ---
 
@@ -11,7 +11,7 @@ Paranormix is a hybrid AI system designed for the analysis and investigation of 
 ### A. Data Acquisition (`src/ml/fetch_data.py`)
 
 - **Process**: Polls external JSON and Text sources (GitHub, Project Gutenberg).
-- **Synthetic Generation**: Injects handcrafted "ground truth" examples for each class to ensure the model has a baseline understanding of "perfectly clean" narratives.
+- **Synthetic Generation**: Injects handcrafted **high-confidence reference examples** for each class to ensure the model has a baseline understanding of prototypical linguistic markers.
 - **Library (requests)**: Used to fetch external data via HTTP.
 
 ### B. The Core Pipeline (`src/ml/process_creepypasta.py`)
@@ -56,50 +56,57 @@ This is the heart of the automated data engineering.
 ### B. Unified API (`src/backend/main.py`)
 
 - **FastAPI**: Provides high-performance async endpoints.
-- **Grounding Strategy**: When the LLM (Groq) is called, the system **injects** the raw ML probabilities as a hidden system message. This ensures the chatbot cannot lie about the model's findings.
-- **Turn Enforcement**: Tracks turn counts (max 5) to prevent infinite loops or excessive API usage.
+- **Grounding Strategy**: When the conversational layer is invoked, the system **injects** the raw ML probabilities as a hidden system context. This prevents the LLM from hallucinating findings that contradict the predictive engine.
+- **Turn Enforcement**: Tracks turn counts (max 5) to maintain state within free-tier resource constraints.
 
 ---
 
 ## 4. Library & Tool Usage Guide
 
-| Library           | Purpose in Paranormix                                                            |
-| :---------------- | :------------------------------------------------------------------------------- |
-| **scikit-learn**  | Core ML framework for Vectorization, Classification, and Metrics.                |
-| **FastAPI**       | Modern web framework for the backend API.                                        |
-| **pandas**        | The "Swiss Army Knife" for tabular data manipulation during training.            |
-| **numpy**         | Efficient handling of probability arrays and numerical transformations.          |
-| **uvicorn**       | The ASGI server that runs the Python code in a production-ready loop.            |
-| **groq**          | High-speed interface to Llama 3 for the conversational voice.                    |
-| **joblib**        | Efficient disk-writing for the large ML model files.                             |
-| **nltk/spacy**    | Natural Language Toolkits for text normalization and lemmatization.              |
-| **pydantic**      | Ensures the data coming from the user (JSON) matches our expectations perfectly. |
-| **python-dotenv** | Securely loads the `GROQ_API_KEY` from the hidden `.env` file.                   |
-| **openpyxl**      | Allows Python to read the original `.xlsx` story database.                       |
+| Library           | Purpose in Paranormix                                                             |
+| :---------------- | :-------------------------------------------------------------------------------- |
+| **scikit-learn**  | Core ML framework for Vectorization, Classification, and Metrics.                 |
+| **FastAPI**       | Modern web framework for the backend API.                                         |
+| **pandas**        | The "Swiss Army Knife" for tabular data manipulation during training.             |
+| **numpy**         | Efficient handling of probability arrays and numerical transformations.           |
+| **uvicorn**       | The ASGI server that runs the Python code in a production-ready loop.             |
+| **LLM Provider**  | Pluggable support for OpenAI, Groq, or Gemini-compatible APIs for interpretation. |
+| **joblib**        | Efficient disk-writing for the large ML model files.                              |
+| **nltk/spacy**    | Natural Language Toolkits for text normalization and lemmatization.               |
+| **pydantic**      | Ensures the data coming from the user (JSON) matches our expectations perfectly.  |
+| **python-dotenv** | Securely loads the `GROQ_API_KEY` from the hidden `.env` file.                    |
+| **openpyxl**      | Allows Python to read the original `.xlsx` story database.                        |
 
 ---
 
-## 5. Live Deployment Strategy (GitHub Pages)
+## 5. Live Deployment Strategy (Railway – Unified Full Stack)
 
-### The Limitation
+### Deployment Model
 
-GitHub Pages is **Static Hosting**. It cannot run Python code (`main.py`) or ML models (`.pkl`).
+Paranormix is deployed as a **single full-stack application** on Railway, serving both:
 
-### The Solution: Hybrid Deployment
+- **Frontend** (HTML, CSS, JavaScript) via FastAPI static mounting.
+- **Backend** (FastAPI + ML inference engine).
 
-1. **Frontend (GitHub Pages)**:
-   - The files in `docs/` are served globally.
-   - The `app.js` is modified to point to an external **Live Backend URL**.
-2. **Backend (Render/Railway)**:
-   - The Python code and ML model are deployed to a server.
-   - This provides the "API" that the GitHub Pages site talks to.
+This architecture eliminates cross-origin (CORS) complexity and ensures that both the predictive models and the interface reside in a synchronized runtime environment.
 
-### Steps for Live Deployment:
+### Why GitHub Pages Was Not Used
 
-1. **Host the Backend**:
-   - Push this repo to GitHub.
-   - Connect the repo to [Render.com](https://render.com).
-   - Add your `GROQ_API_KEY` in Render's "Environment Variables."
-2. **Configure GitHub Pages**:
-   - In GitHub Repo Settings, enable Pages and point it to the `/docs` folder.
-   - Paranormix will then be live at `https://[your-username].github.io/[repo-name]`.
+GitHub Pages is a static hosting provider and cannot execute the server-side Python logic, handle session memory, or run the scikit-learn inference engine. While a hybrid model was considered, the final deployment consolidates all components into a single Railway service for maximum reliability.
+
+### Backend & Frontend Access
+
+- **Application URL**: `https://paranormix-production.up.railway.app`
+- **Interactive Documentation**: `https://paranormix-production.up.railway.app/docs` (Swagger UI)
+
+### Runtime Configuration
+
+- **Server**: Uvicorn (ASGI)
+- **Primary Command**: `uvicorn src.backend.main:app --host 0.0.0.0 --port $PORT`
+- **Environment Variables**:
+  - `GROQ_API_KEY`: Required for the conversational interpretation layer.
+  - `MAX_CHAT_TURNS`: Enforces session length limits.
+
+### Session Behavior
+
+Session memory is volatile and stored in-process. On service hibernation or restart (typical on free tiers), active session history resets. This ensures data privacy and maintains a predictable memory footprint.

@@ -39,6 +39,7 @@ MANIFEST
 # System files
 .DS_Store
 Thumbs.db
+TECHNICAL_DOCUMENTATION.md
 
 # IDEs
 .vscode/
