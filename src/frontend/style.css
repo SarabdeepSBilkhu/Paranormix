@@ -67,7 +67,7 @@ body {
 }
 
 .research-grid.axial-active {
-    grid-template-columns: 1fr 450px;
+    grid-template-columns: 1fr 1fr;
 }
 
 .research-panel {

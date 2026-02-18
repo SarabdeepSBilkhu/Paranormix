@@ -101,7 +101,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 3. Ranked Matches
         const rankContainer = report.getElementById('rankedMatches');
-        mlData.ranked_matches.forEach(match => {
+        const rankedMatches = mlData.ranked_matches || [];
+        rankedMatches.forEach(match => {
             const div = document.createElement('div');
             div.className = 'rank-item';
             div.innerHTML = `

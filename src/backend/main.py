@@ -112,6 +112,7 @@ async def chat(input_data: ChatInput):
             session['band'] = result.get("confidence_band", "Low")
             session['stability'] = result.get("stability_status", "Unknown")
             session['absent'] = result.get("absent_signals", [])
+            session['ranked_matches_raw'] = result.get("ranked_matches", [])
 
             # Initialize history with the story and hidden diagnostic report
             session_store.append_message(session_id, "user", f"SUBJECT NARRATIVE: {input_data.user_message}")
@@ -182,6 +183,7 @@ PROTOCOL: Confirm results on turn 1. Use details to answer specific follow-up qu
                 "stability": session.get('stability'),
                 "observed": session['evidence'],
                 "absent": session.get('absent'),
+                "ranked_matches": session.get('ranked_matches_raw', []),
                 "chart_data": session['chart_data'],
                 "metadata": {
                     "timestamp": session.get('report_time'),
