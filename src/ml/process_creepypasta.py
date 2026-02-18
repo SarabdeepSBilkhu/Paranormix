@@ -3,7 +3,14 @@ import re
 import os
 import json
 import numpy as np
+import spacy
 from sklearn.model_selection import train_test_split
+
+# Load SpaCy
+try:
+    nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
+except:
+    nlp = None
 
 # Config
 INPUT_FILE = "creepypastas.xlsx" # Assumed in project root
@@ -20,11 +27,11 @@ LABELS = {
 
 # Heuristic Keywords for Semi-Automated Labeling
 KEYWORDS = {
-    "apparition": ["ghost", "spirit", "shade", "specter", "figure", "silhouette", "white lady", "apparition", "transparent"],
-    "poltergeist": ["thrown", "crash", "bang", "loud", "knock", "slam", "levitate", "fly across", "scratch"],
-    "folklore": ["legend", "myth", "ritual", "ancient", "curse", "tradition", "elder", "village", "townspeople"],
-    "creature": ["eyes", "teeth", "claws", "beast", "monster", "fur", "growl", "creature", "thing"],
-    "psychological": ["crazy", "insane", "mind", "head", "voice", "remember", "dream", "wake up", "hallucination"]
+    "apparition": ["ghost", "spirit", "shade", "specter", "figure", "silhouette", "white lady", "apparition", "transparent", "misty", "ethereal"],
+    "poltergeist": ["thrown", "crash", "bang", "loud", "knock", "slam", "levitate", "fly across", "scratch", "shattered", "thump", "rattle"],
+    "folklore": ["legend", "myth", "ritual", "ancient", "curse", "tradition", "elder", "village", "townspeople", "shrine", "ancestor", "curse"],
+    "creature": ["eyes", "teeth", "claws", "beast", "monster", "fur", "growl", "creature", "thing", "cryptid", "paws", "snarl"],
+    "psychological": ["crazy", "insane", "mind", "head", "voice", "remember", "dream", "wake up", "hallucination", "paranoia", "delusion", "trauma"]
 }
 
 def clean_text(text):
@@ -45,9 +52,15 @@ def clean_text(text):
     # Normalize whitespace
     text = re.sub(r'\s+', ' ', text).strip()
     
-    # Lowercase
-    text = text.lower()
+    # SpaCy processing
+    if nlp:
+        doc = nlp(text.lower())
+        # Lemmatize and remove stop words / punctuation
+        tokens = [token.lemma_ for token in doc if not token.is_stop and not token.is_punct and len(token.text) > 2]
+        return " ".join(tokens)
     
+    # Fallback to simple cleaning
+    text = re.sub(r'[^a-zA-Z\s]', '', text.lower())
     return text
 
 def segment_text(text, chunk_size=300):

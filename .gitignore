@@ -32,9 +32,11 @@ coverage.xml
 *.egg
 MANIFEST
 
-# Data & Models (Optional - depends on size)
-# data/raw/
-# *.pkl
+# Data & Models
+data/processed/
+data/raw/*.json
+models/*.pkl
+*.xlsx
 
 # System files
 .DS_Store

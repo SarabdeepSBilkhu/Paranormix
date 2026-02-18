@@ -1,6 +1,12 @@
 import joblib
 import os
+import sys
 import numpy as np
+
+# Add project root to sys.path to allow absolute imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from src.ml.preprocessing import lemmatize_tokenizer
 
 MODEL_PATH = os.path.join("models", "ghost_model.pkl")
 

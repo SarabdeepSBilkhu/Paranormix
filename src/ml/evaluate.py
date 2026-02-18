@@ -2,8 +2,13 @@ import sys
 import json
 import os
 import joblib
+
+# Add project root to sys.path to allow absolute imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 import pandas as pd
+from src.ml.preprocessing import lemmatize_tokenizer
 
 # Force UTF-8 output for Windows consoles
 sys.stdout.reconfigure(encoding='utf-8')
