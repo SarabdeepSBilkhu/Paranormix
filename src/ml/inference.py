@@ -114,6 +114,7 @@ class ParanormalInvestigator:
             "systemic_limit": systemic_limit,
             "evidence_signals": signals["evidence"],
             "interpretive_modifiers": signals["modifiers"],
+            "absent_signals": signals["absent"],
             "competing_hypotheses": [h[0] for h in ranked_hypotheses if h[0] != prediction][:3],
             "chart_data": {
                 "class_scores": normalized_scores,
@@ -153,6 +154,7 @@ class ParanormalInvestigator:
         text_lower = text.lower()
         evidence = []
         modifiers = []
+        absent = []
         
         # Primary Positive Signals
         patterns_evidence = {
@@ -171,16 +173,16 @@ class ParanormalInvestigator:
         for name, keywords in patterns_evidence.items():
             if any(k in text_lower for k in keywords):
                 evidence.append(name)
+            else:
+                absent.append(f"No {name}")
         
         for name, keywords in patterns_modifiers.items():
             if any(k in text_lower for k in keywords):
                 modifiers.append(name)
-
-        # Negative Constraint: Physical Disturbance requires impact
-        # If text mentions "ghost" but explicitly says "didn't touch anything", we would 
-        # ideally penalize poltergeist here, but for now we focus on the approval logic.
+            else:
+                absent.append(f"No {name}")
                 
-        return {"evidence": evidence, "modifiers": modifiers}
+        return {"evidence": evidence, "modifiers": modifiers, "absent": absent}
 
 if __name__ == "__main__":
     bot = ParanormalInvestigator()

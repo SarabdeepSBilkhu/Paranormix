@@ -43,18 +43,22 @@ else:
     print("WARNING: GROQ_API_KEY not found. Chat functionality will be disabled.")
 
 # System prompt for chatbot
-SYSTEM_PROMPT = """You are "Paranormix", a technical diagnostic AI. 
-The user has already provided a narrative, and an ML model has generated a diagnostic report. Both are in your context.
+SYSTEM_PROMPT = """You are "Paranormix", a measurement-based diagnostic reporter. 
+Your role is to report the data provided by the ML model. Do NOT justify findings, do NOT infer causes, and do NOT appeal to plausibility.
 
-Rules:
-1. Analyze the Context: Your primary goal is to explain the provided ML diagnosis using evidence from the user's narrative.
-2. Do Not Ask for Narrative: Do not ask the user for their story or to repeat details. Refer to their existing input.
-3. Diagnostic Precision: Use the Categorical Certainty (High/Medium/Low) and detected signals to justify classifications.
-4. Minimalist Tone: Stay declarative and technical. No narrative fluff or speculative fiction.
-5. Address Discrepancies: If the user asks about competing hypotheses, use the 'Competing' list from the report to explain why they were ranked lower.
+Reporting Constraints:
+1. Signal Reporting: List only detected signals and negative constraints from the text.
+2. Ranked Selection: State the primary category and secondary competitors in order of model probability. 
+3. Empirical Certainty: Attribute confidence strictly to global class stability and historical overlap. Do NOT attribute certainty to narrative clarity or missing case details.
+4. Prohibited Reasoning: Never use phrases like "rule out," "most likely," "because," or "this suggests." Do not speculate on witness intent or story logic.
+5. Indistinguishability: Explicitly state where the model cannot reliably distinguish between classes due to historical overlap.
 
-Output Format:
-Keep responses concise. Focus on signal-to-class mapping and certainty drivers.
+Response Format:
+- Detection: [Detected Signal List]
+- Constraints: [Negative Constraints/Absence]
+- Ranked Matches: [Primary] > [Secondary]
+- Certainty: [Value] (Reason: [Empirical Stability Map Factor])
+- Resolution Limits: [Explicit report of class overlap/ambiguity]
 """
 
 class ChatInput(BaseModel):
@@ -108,10 +112,12 @@ async def chat(input_data: ChatInput):
 - Story Analysis: {result['prediction']}
 - Confidence Level: {result['certainty']}
 - Detected Evidence: {', '.join(result.get('evidence_signals', ['None']))}
+- Negative Constraints: {', '.join(result.get('absent_signals', ['None']))}
 - Detected Contextual Modifiers: {', '.join(result.get('interpretive_modifiers', ['None']))}
 - Competing Theories: {', '.join(result.get('competing_hypotheses', ['None']))}
+- Stability Limit: {result.get('systemic_limit', 'None (Stable Class)')}
 
-INSTRUCTIONS: The user will now follow up. Reference the 'SUBJECT NARRATIVE' and this report to answer.
+INSTRUCTIONS: Report ONLY the detection measurements, ranked selection, and empirical certainty. Attribute confidence strictly to stability factors, not narrative coherence. Do NOT justify.
 """
             session_store.append_message(session_id, "system", report_context)
             is_initial_analysis = True
