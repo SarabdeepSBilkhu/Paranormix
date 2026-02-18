@@ -57,12 +57,8 @@ class ParanormalInvestigator:
             secondary_prob = raw_ranked[1][1] if len(raw_ranked) > 1 else 0
             gap = primary_prob - secondary_prob
 
-            # Mandatory Hierarchy Constraints
-            prediction = winner
-            if "Pattern_C" in signals["evidence"]: # Previously Psychological
-                prediction = "psychological"
-            elif "Pattern_A" in signals["evidence"] and prediction not in ["psychological", "poltergeist"]: # Previously Physical
-                prediction = "poltergeist"
+            # Mandatory Identity Transcription (No Overrides)
+            prediction = raw_ranked[0][0]
 
             # --- LAYER 3: EMPIRICAL CALIBRATION (STABILITY CAP) ---
             STABILITY_INDEX = {
