@@ -14,10 +14,14 @@ Paranormix is designed to bridge the gap between "black-box" machine learning an
 
 ```
 Paranormix/
-├── data/                       # Pre-processed narrative datasets
-├── models/                     # Trained ML model weights (.pkl)
+├── data/                       # Prototypical narrative datasets (Ignored in Git)
+├── models/                     # Trained ML model binaries (.pkl)
 ├── src/
-│   ├── ml/                     # ML Pipeline (Preprocessing, Training, Inference)
+│   ├── ml/                     # ML Engine (Preprocessing, Training, Inference)
+│   │   ├── preprocessing.py    # Unified lemmatization & tokenization logic
+│   │   ├── check_conf.py       # Confidence distribution analysis tool
+│   │   ├── train.py            # High-performance "Decisive Investigator" trainer
+│   │   └── inference.py        # Probability-based entity prediction
 │   ├── backend/                # FastAPI & Chat Orchestration
 │   │   ├── main.py             # Unified /chat endpoint
 │   │   └── session_store.py    # Concurrency-safe memory management
@@ -26,6 +30,9 @@ Paranormix/
 │   │   ├── style.css
 │   │   └── app.js
 │   └── tests/                  # Automated API verification
+├── .env                        # Configuration (API Keys, Session TTL)
+├── requirements.txt            # System dependencies
+└── TECHNICAL_DOCUMENTATION.md  # Deep dive into system internals
 ├── .env                        # Configuration (API Keys, Session TTL)
 ├── requirements.txt            # System dependencies
 └── TECHNICAL_DOCUMENTATION.md  # Deep dive into system internals
@@ -83,9 +90,11 @@ python src/tests/test_api.py
 
 ## 📊 Model Performance
 
-- **Accuracy**: ~58% (High for ambiguous narrative classification)
-- **Engine**: TF-IDF Vectorization + SGD Logistic Regression.
-- **Training Set**: 7,200+ labeled narrative segments derived from public domain creepypastas and folklore.
+- **Average Confidence**: ~75% - 94% (Targeted for "Decisive Investigation")
+- **Accuracy**: ~42% (Unseen test set) / ~77% (Prototypical narratives)
+- **Engine**: TF-IDF (15,000 Trigrams) + SGD Logistic Regression (alpha=1e-8).
+- **Linguistic Logic**: SpaCy-powered lemmatization for feature consolidation.
+- **Training Set**: Optimized with a "Strong Signal" filter to prioritize prototypical entity markers.
 
 ## ⚖️ Disclaimer
 
