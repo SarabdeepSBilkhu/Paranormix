@@ -21,7 +21,13 @@ class ParanormalInvestigator:
 
     def analyze(self, text):
         if not self.model:
-            return {"error": "Model not loaded"}
+            return {
+                "prediction": "Unknown (Investigator Off-Duty)",
+                "confidence": 0.0,
+                "probabilities": {"Unknown": 1.0},
+                "key_signals": ["Model missing from deployment"],
+                "likely_confusions": []
+            }
         
         # Predict class
         prediction = self.model.predict([text])[0]
