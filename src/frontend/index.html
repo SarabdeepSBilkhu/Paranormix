@@ -12,13 +12,12 @@
         <header class="main-header">
             <div class="brand">
                 <span class="logo-text">PARANORMIX</span>
-                <span class="status-pill mono">SYSTEM_AXIAL_V3.01_RESEARCH</span>
             </div>
             <div class="header-metadata mono" id="sessionHeader">
                 <!-- Session Metadata injected here -->
             </div>
             <div class="header-controls">
-                <button id="resetBtn" class="reset-link mono">AXIAL_RESET</button>
+                <button id="resetBtn" class="reset-link mono">AXIAL RESET</button>
             </div>
         </header>
 
@@ -26,7 +25,7 @@
             <!-- Left Panel: Interactive Analyst Dialogue (Dynamic) -->
             <section class="research-panel catalyst-panel">
                 <div class="panel-header flex-between">
-                    <h2 class="mono">ANALYST_DIALOGUE_INTERFACE</h2>
+                    <h2 class="mono">ANALYST DIALOGUE INTERFACE</h2>
                     <span class="status-indicator mono" id="analystStatus">READY</span>
                 </div>
                 
@@ -48,8 +47,8 @@
 
                 <footer class="terminal-footer research-footer">
                     <div class="footer-meta mono">
-                        <span>MODEL: SGD_LOGISTIC_REGRESSION_v3</span>
-                        <span>LLM: ANALYST_LLAMA3_DECODER</span>
+                        <span>MODEL: SGD LOGISTIC REGRESSION</span>
+                        <span>LLM: ANALYST LLAMA3 DECODER</span>
                         <span id="sessionTimestamp">--</span>
                     </div>
                 </footer>
@@ -58,7 +57,7 @@
             <!-- Right Panel: Empirical Metrics (Static per Analysis) -->
             <section id="metricPanel" class="research-panel metric-panel panel-collapsed">
                 <div class="panel-header">
-                    <h2 class="mono">EMPIRICAL_DATA_AXIS</h2>
+                    <h2 class="mono">EMPIRICAL DATA AXIS</h2>
                 </div>
                 <div id="diagnosticDashboard" class="axial-scroll">
                     <!-- Injected via app.js -->
@@ -74,11 +73,11 @@
             <div class="axial-section core-report">
                 <div class="metric-row">
                     <div class="metric-block">
-                        <span class="label-mono">PRIMARY_DIAGNOSIS</span>
+                        <span class="label-mono">PRIMARY DIAGNOSIS</span>
                         <h1 id="dashPrediction" class="prediction-text">UNDETERMINED</h1>
                     </div>
                     <div class="metric-block align-right">
-                        <span class="label-mono">CONFIDENCE_BAND</span>
+                        <span class="label-mono">CONFIDENCE BAND</span>
                         <div id="dashBand" class="band-indicator">--</div>
                     </div>
                 </div>
@@ -89,13 +88,13 @@
 
             <!-- Section 2: Distribution -->
             <div class="axial-section">
-                <h3 class="section-title mono">CLASS_PROBABILITY_DISTRIBUTION</h3>
+                <h3 class="section-title mono">CLASS PROBABILITY DISTRIBUTION</h3>
                 <div class="chart-box" id="chartClassScore"></div>
             </div>
 
             <!-- Section 3: Ranked Matches -->
             <div class="axial-section">
-                <h3 class="section-title mono">COMPETING_AXES / RESOLUTION</h3>
+                <h3 class="section-title mono">COMPETING AXES / RESOLUTION</h3>
                 <div id="rankedMatches" class="ranked-list mono">
                     <!-- Ranked items injected here -->
                 </div>
@@ -103,20 +102,19 @@
 
             <!-- Section 4: Grouped Signals -->
             <div class="axial-section">
-                <h3 class="section-title mono">DETECTED_SIGNALS</h3>
+                <h3 class="section-title mono">DETECTED SIGNALS</h3>
                 <div class="signal-group">
-                    <h4 class="mono small">OBSERVED_PATTERNS</h4>
+                    <h4 class="mono small">OBSERVED PATTERNS</h4>
                     <ul id="observedSignals" class="signal-list"></ul>
                 </div>
                 <div class="signal-group">
-                    <h4 class="mono small">ABSENT_INDICATORS</h4>
+                    <h4 class="mono small">ABSENT INDICATORS</h4>
                     <ul id="absentSignals" class="signal-list negative"></ul>
                 </div>
             </div>
             
             <div class="session-audit mono">
-                <span>WORD_COUNT: <span id="dashWordCount">0</span></span>
-                <span>MODEL_VERSION: 3.0.1-RESEARCH</span>
+                <span>WORD COUNT: <span id="dashWordCount">0</span></span>
             </div>
         </div>
     </template>

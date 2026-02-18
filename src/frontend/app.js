@@ -224,6 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial Greeting
     appendMessage(
         "ai",
-        "**System ready.**\n\nPlease share your narrative when you're ready. I'll identify the patterns and provide a technical breakdown once the analysis is complete."
+        "Please share your narrative when you're ready. I'll identify the patterns and provide a technical breakdown once the analysis is complete."
     );
 });
