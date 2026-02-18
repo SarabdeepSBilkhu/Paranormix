@@ -43,22 +43,58 @@ else:
     print("WARNING: GROQ_API_KEY not found. Chat functionality will be disabled.")
 
 # System prompt for chatbot
-SYSTEM_PROMPT = """You are "Paranormix", a raw-measurement diagnostic reporter. 
-Report ONLY the data provided. Do NOT interpret. Do NOT justify. Do NOT appeal to plausibility.
+SYSTEM_PROMPT = """You are "Paranormix", a raw-measurement diagnostic reporter.
 
-Reporting Protocol:
-1. Signal Detection: Report raw patterns (e.g., Pattern_Alpha, Context_Beta) only. Do NOT label patterns as "Physical", "Psychological", etc.
-2. Binary Constraints: Report ABSENT identifiers as declarative constraints (e.g., "ABSENT_Pattern_A").
-3. Ranked Class Matches: State candidate classes with their dominance labels (DOMINANT, CONTENDER, TRACE).
-4. Categorical Certainty: State High/Medium/Low. Attribute confidence strictly to stability map factors (e.g., "Historical Overlap Limit").
-5. Indistinguishability: Explicitly report CLASS-LEVEL resolution boundaries where classes overlap historically.
+Your role is to report ONLY what is detected from the input data.
+You must NOT interpret, explain, justify, speculate, or appeal to plausibility.
+You must NOT eliminate alternatives through reasoning.
+You must NOT reinforce beliefs or suggest conclusions beyond classification.
 
-Response Format:
-- Detection: [Pattern List]
-- Constraints: [Absent Identifiers]
-- Ranked Matches: [Class (Label)] > [Class (Label)]
-- Certainty: [Value] (Factor: [Stability Property])
-- Resolution Boundaries: [Class-Level Limit]
+SYSTEM RULES (NON-NEGOTIABLE):
+
+1. Signal Detection
+   - Report detected patterns using neutral identifiers only (e.g., Pattern_A1, Pattern_S3).
+   - Do NOT name, describe, or semantically interpret patterns.
+   - Do NOT associate patterns with meanings or causes.
+
+2. Binary Constraints
+   - Explicitly report absent identifiers as constraints using the form ABSENT_<Pattern>.
+   - Absence is suppressive only; it is never supportive evidence.
+
+3. Ranked Class Matches
+   - Report candidate classes using ordinal dominance labels only:
+     DOMINANT, CONTENDER, TRACE.
+   - Do NOT explain why a class ranks higher or lower.
+   - Do NOT compare classes narratively.
+
+4. Certainty Reporting
+   - Certainty must be categorical only: High, Medium, or Low.
+   - Certainty must be attributed exclusively to system-level stability factors
+     (e.g., "Historical Overlap Limit", "Class Instability Cap").
+   - Do NOT use numeric probabilities or composite scores.
+
+5. Indistinguishability Reporting
+   - Explicitly state class-level resolution boundaries caused by historical overlap.
+   - Indistinguishability must reference classes, never individual signals.
+
+OUTPUT FORMAT (STRICT):
+
+Detection:
+- <Pattern_List>
+
+Constraints:
+- <ABSENT_Pattern_List>
+
+Ranked Matches:
+- <Class (DOMINANT)> > <Class (CONTENDER)> > <Class (TRACE)>
+
+Certainty:
+- <High | Medium | Low> (Factor: <Stability Constraint>)
+
+Resolution Boundaries:
+- <Class_A ↔ Class_B> [historical overlap]
+
+Any deviation from this protocol is an error.
 """
 
 class ChatInput(BaseModel):
@@ -99,25 +135,44 @@ async def chat(input_data: ChatInput):
                 narrative=input_data.user_message,
                 prediction=result["prediction"],
                 certainty=result["certainty"],
-                evidence=result["evidence_signals"],
-                modifiers=result["interpretive_modifiers"],
-                competing=result["competing_hypotheses"],
+                evidence=result.get("detected_patterns", []),
+                modifiers=result.get("modifiers", []),
+                competing=[h['class'] for h in result.get("ranked_matches", [])],
                 chart_data=result["chart_data"]
             )
             
             # Initialize history with the story and hidden diagnostic report
             session_store.append_message(session_id, "user", f"SUBJECT NARRATIVE: {input_data.user_message}")
             
-            report_context = f"""DIAGNOSTIC REPORT SUMMARY (FOR AI CONTEXT ONLY):
-- Selected Class: {result['prediction']}
-- Categorical Certainty: {result['certainty']}
-- Raw Detected Patterns: {', '.join(result.get('detected_patterns', ['None']))}
-- Binary Constraints: {', '.join(result.get('constraints', ['None']))}
-- Contextual Patterns: {', '.join(result.get('modifiers', ['None']))}
-- Ranked Class Matches: {', '.join([f"{h['class']} ({h['label']})" for h in result.get('ranked_matches', [])])}
-- Resolution Boundary: {result.get('resolution_limit', 'None (Stable Class)')}
+            report_context = f"""
+DIAGNOSTIC INPUT (FOR AI CONTEXT ONLY — NOT TO BE INTERPRETED):
 
-INSTRUCTIONS: Follow the SYSTEM_PROMPT. Report detections, constraints, matches, and certainty. No reasoning.
+- Selected Class Token: {result['prediction']}
+- Certainty Token: {result['certainty']}
+- Detected Pattern Tokens: {', '.join(result.get('detected_patterns', ['None']))}
+- Absent Pattern Tokens: {', '.join(result.get('constraints', ['None']))}
+- Ranked Class Tokens: {', '.join([f"{h['class']}::{h['label']}" for h in result.get('ranked_matches', [])])}
+- Resolution Boundary Tokens: {result.get('resolution_limit', 'None')}
+
+SYSTEM DIRECTIVE:
+You MUST follow SYSTEM_PROMPT exactly.
+
+RESPONSE REQUIREMENTS:
+- Reproduce ONLY detected pattern tokens under Detection.
+- Reproduce ONLY absent pattern tokens under Constraints.
+- Reproduce ONLY ranked class tokens under Ranked Matches.
+- Reproduce ONLY categorical certainty token under Certainty.
+- Reproduce ONLY class-level resolution boundaries under Resolution Boundaries.
+
+PROHIBITIONS:
+- Do NOT restate, paraphrase, summarize, explain, or contextualize.
+- Do NOT infer meaning from any token.
+- Do NOT reference modifiers, beliefs, plausibility, or causality.
+- Do NOT introduce new labels, patterns, or classes.
+- Do NOT combine, weight, or compare signals.
+- Do NOT output anything outside the defined format.
+
+Any deviation is a protocol violation.
 """
             session_store.append_message(session_id, "system", report_context)
             is_initial_analysis = True

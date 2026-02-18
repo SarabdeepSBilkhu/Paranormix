@@ -36,6 +36,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.detail || `Server Error: ${response.status}`);
+            }
+
             const data = await response.json();
             
             if (data.session_id) sessionId = data.session_id;
@@ -44,10 +49,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderDashboard(data.ml_data);
             }
 
-            appendMessage('ai', data.response);
+            appendMessage('ai', data.response || "NO_RESPONSE_RECEIVED");
         } catch (err) {
             console.error('Diagnostic error:', err);
-            appendMessage('ai', 'SYSTEM_ERROR: Failed to establish diagnostic link.');
+            appendMessage('ai', `SYSTEM_ERROR: ${err.message || 'Failed to establish diagnostic link.'}`);
         } finally {
             setLoading(false);
         }
@@ -166,8 +171,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const div = document.createElement('div');
         div.className = `message ${role}`;
         
+        // Safety check for undefined/null text
+        const safeText = String(text || "");
+        
         // Format bold text
-        const formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+        const formatted = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
         div.innerHTML = formatted;
         
         chatContainer.appendChild(div);
