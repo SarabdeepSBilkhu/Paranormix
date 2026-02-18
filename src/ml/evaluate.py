@@ -6,7 +6,7 @@ import joblib
 # Add project root to sys.path to allow absolute imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score
 import pandas as pd
 from src.ml.preprocessing import lemmatize_tokenizer
 
@@ -48,20 +48,31 @@ def evaluate():
 
     # 3. Predict
     y_pred = pipeline.predict(X_test)
-
-    # 4. Metrics
-    print("\nClassification Report:")
+    
+    # Metrics
+    print("\n--- PERFORMANCE SUMMARY (Macro-F1 Priority) ---")
+    macro_f1 = f1_score(y_test, y_pred, average='macro')
+    accuracy = accuracy_score(y_test, y_pred)
+    
+    print(f"HEADLINE METRIC (Macro F1): {macro_f1:.4f}")
+    print(f"Diagnostic Accuracy:         {accuracy:.4f}")
+    
+    print("\n--- PER-CLASS METRICS ---")
     print(classification_report(y_test, y_pred))
     
-    print("\nAccuracy Score:")
-    acc = accuracy_score(y_test, y_pred)
-    print(f"{acc:.4f} ({acc*100:.2f}%)")
-
-    print("\nConfusion Matrix:")
-    labels = sorted(list(set(y_test)))
-    cm = confusion_matrix(y_test, y_pred, labels=labels)
-    cm_df = pd.DataFrame(cm, index=labels, columns=labels)
+    print("\n--- CONFUSION MATRIX (Semantic Validity) ---")
+    cm = confusion_matrix(y_test, y_pred)
+    classes = sorted(list(set(y_test)))
+    cm_df = pd.DataFrame(cm, index=classes, columns=classes)
     print(cm_df)
+    
+    # Specific Semantic checks
+    print("\n--- SEMANTIC INTEGRITY CHECKS ---")
+    psych_recall = cm_df.loc['psychological', 'psychological'] / cm_df.loc['psychological'].sum()
+    print(f"Psychological Recall: {psych_recall:.2%} (Target: High to avoid False Positives)")
+    
+    ghost_psych_overlap = cm_df.loc['apparition', 'psychological'] / cm_df.loc['apparition'].sum()
+    print(f"Apparition → Psych Leakage: {ghost_psych_overlap:.2%} (Ambiguous Ghost/Psych stories)")
 
 if __name__ == "__main__":
     evaluate()

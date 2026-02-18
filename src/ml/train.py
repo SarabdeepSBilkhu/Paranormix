@@ -33,7 +33,7 @@ def get_signal_strength(text, label):
     return sum(1 for w in words if w in text_lower)
 
 def train_model():
-    print("Initializing ULTRA HIGH CONFIDENCE model...")
+    print("Initializing SEMANTIC STABILITY model...")
     
     # Load data
     if not os.path.exists(PROCESSED_DATA_PATH):
@@ -43,72 +43,56 @@ def train_model():
     with open(PROCESSED_DATA_PATH, "r") as f:
         data = json.load(f)
     
-    # Check if data is list of dicts (new format) or dict of lists (old format)
-    if isinstance(data, list):
-        # Filtering for "Strong Signal" examples to force peaky boundaries
-        print("Filtering for prototypical (strong signal) samples...")
-        filtered_data = [
-            item for item in data 
-            if get_signal_strength(item['text'], item['label']) >= 3
-        ]
-        
-        if len(filtered_data) < 500:
-            print(f"Warning: Only {len(filtered_data)} strong samples found. Relaxing filter to >= 2.")
-            filtered_data = [
-                item for item in data 
-                if get_signal_strength(item['text'], item['label']) >= 2
-            ]
-
-        X = [item['text'] for item in filtered_data]
-        y = [item['label'] for item in filtered_data]
-    else:
-        X = data['text']
-        y = data['labels']
+    # Use full dataset for better generalization
+    print(f"Loading {len(data)} narratives for comprehensive training...")
+    X = [item['text'] for item in data]
+    y = [item['label'] for item in data]
     
-    # Check if we have enough data
-    if len(X) < 5:
-        print("WARNING: Not enough data to train.")
-        return
-
-    print(f"Training on {len(X)} PROTOTYPICAL samples (out of {len(data)} total)...")
-
     # Split data
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=42)
     
-    # Create Pipeline components
-    # Using trigrams and raw SGD for peaky results
+    # TARGETED CLASS WEIGHTS
+    # We boost 'psychological' to increase RECALL (avoid false supernatural attribution)
+    # We boost 'creature' to improve its Macro-F1 (low support)
+    custom_weights = {
+        'apparition': 1.0,
+        'poltergeist': 1.0,
+        'folklore': 1.0,
+        'psychological': 1.8, # Stronger bias for "real-world" explanations
+        'creature': 2.0       # Prevent collapse of sparse class
+    }
+
     pipeline = Pipeline([
         ('tfidf', TfidfVectorizer(
-            max_features=15000, 
-            ngram_range=(1, 3), 
+            max_features=10000, 
+            ngram_range=(1, 2), # Bi-grams are more stable than tri-grams for general patterns
             tokenizer=lemmatize_tokenizer, 
             token_pattern=None,
-            sublinear_tf=True # Scaled term frequencies help with confidence
+            sublinear_tf=True
         )),
         ('clf', SGDClassifier(
             loss='log_loss', 
             penalty='l2', 
-            alpha=1e-8, # Extremely low regularization for overconfidence
+            alpha=5e-4, # Stable regularization for better F1 generalization
             random_state=42, 
-            max_iter=10000, 
-            tol=1e-4, 
-            class_weight='balanced'
+            max_iter=5000, 
+            class_weight=custom_weights
         ))
     ])
     
     # Train
-    print("Fitting model (Aggressive mode)...")
+    print("Fitting model (Semantic focus)...")
     pipeline.fit(X_train, y_train)
     
-    # Evaluate on the prototypical test set
-    print("Evaluating on Prototypical Test Set...")
+    # Evaluate
+    print("Evaluating stability...")
     y_pred = pipeline.predict(X_test)
     print(classification_report(y_test, y_pred))
     
     # Save
     model_path = os.path.join(MODEL_DIR, "ghost_model.pkl")
     joblib.dump(pipeline, model_path)
-    print(f"High-confidence model saved at {model_path}")
+    print(f"Semantic-stable model saved at {model_path}")
 
 if __name__ == "__main__":
     train_model()
