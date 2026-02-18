@@ -6,6 +6,7 @@ from pydantic import BaseModel
 import sys
 import os
 import uuid
+import datetime
 from typing import Optional, List, Dict, Any
 from dotenv import load_dotenv
 from groq import Groq
@@ -106,7 +107,7 @@ async def chat(input_data: ChatInput):
 
             # Store additional metadata locally in session
             session = session_store.get_session(session_id)
-            session['timestamp'] = now
+            session['report_time'] = now
             session['word_count'] = len(input_data.user_message.split())
             session['band'] = result.get("confidence_band", "Low")
             session['stability'] = result.get("stability_status", "Unknown")
@@ -183,7 +184,7 @@ PROTOCOL: Confirm results on turn 1. Use details to answer specific follow-up qu
                 "absent": session.get('absent'),
                 "chart_data": session['chart_data'],
                 "metadata": {
-                    "timestamp": session.get('timestamp'),
+                    "timestamp": session.get('report_time'),
                     "words": session.get('word_count'),
                     "version": "3.0.1-research"
                 }

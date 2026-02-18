@@ -71,7 +71,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Research Rendering ---
 
     function renderDashboard(mlData) {
-        metricPanel.classList.remove('panel-hidden');
+        const mainGrid = document.getElementById('mainGrid');
+        mainGrid.classList.add('axial-active');
+        
         diagnosticDashboard.innerHTML = '';
         
         const report = dashboardTemplate.content.cloneNode(true);
@@ -199,7 +201,8 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionId = null;
         chatContainer.innerHTML = '';
         diagnosticDashboard.innerHTML = '';
-        metricPanel.classList.add('panel-hidden');
+        const mainGrid = document.getElementById('mainGrid');
+        mainGrid.classList.remove('axial-active');
         sessionHeader.innerHTML = '';
         sessionTimestamp.textContent = '--';
         clearPrompts();

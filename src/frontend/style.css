@@ -57,20 +57,48 @@ body {
     font-size: 0.7rem; cursor: pointer;
 }
 
-/* Research Grid */
+/* Research Grid: Animated Transition */
 .research-grid {
     display: grid;
-    grid-template-columns: 450px 1fr;
+    grid-template-columns: 1fr 0px;
     flex: 1;
     overflow: hidden;
+    transition: grid-template-columns 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.research-grid.axial-active {
+    grid-template-columns: 1fr 450px;
 }
 
 .research-panel {
     display: flex;
     flex-direction: column;
-    border-right: 1px solid var(--border);
     background: var(--bg-panel);
     overflow: hidden;
+}
+
+.catalyst-panel {
+    border-right: none;
+    transition: border-right 0.3s;
+}
+
+.axial-active .catalyst-panel {
+    border-right: 2px solid var(--border);
+}
+
+.metric-panel {
+    border-left: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(50px);
+    transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.axial-active .metric-panel {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+    border-left: 1px solid var(--border);
 }
 
 .panel-header {
@@ -89,8 +117,6 @@ body {
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
 }
-
-.panel-hidden { display: none; }
 
 /* Diagnostic Report */
 .axial-report { display: flex; flex-direction: column; gap: 2rem; }

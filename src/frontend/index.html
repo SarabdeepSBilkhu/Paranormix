@@ -22,19 +22,9 @@
             </div>
         </header>
 
-        <main class="main-layout research-grid">
-            <!-- Left Panel: Empirical Metrics (Static per Analysis) -->
-            <section id="metricPanel" class="research-panel panel-hidden">
-                <div class="panel-header">
-                    <h2 class="mono">EMPIRICAL_DATA_AXIS</h2>
-                </div>
-                <div id="diagnosticDashboard" class="axial-scroll">
-                    <!-- Injected via app.js -->
-                </div>
-            </section>
-
-            <!-- Right Panel: Interactive Analyst Dialogue (Dynamic) -->
-            <section class="research-panel">
+        <main class="main-layout research-grid" id="mainGrid">
+            <!-- Left Panel: Interactive Analyst Dialogue (Dynamic) -->
+            <section class="research-panel catalyst-panel">
                 <div class="panel-header flex-between">
                     <h2 class="mono">ANALYST_DIALOGUE_INTERFACE</h2>
                     <span class="status-indicator mono" id="analystStatus">READY</span>
@@ -63,6 +53,16 @@
                         <span id="sessionTimestamp">--</span>
                     </div>
                 </footer>
+            </section>
+
+            <!-- Right Panel: Empirical Metrics (Static per Analysis) -->
+            <section id="metricPanel" class="research-panel metric-panel panel-collapsed">
+                <div class="panel-header">
+                    <h2 class="mono">EMPIRICAL_DATA_AXIS</h2>
+                </div>
+                <div id="diagnosticDashboard" class="axial-scroll">
+                    <!-- Injected via app.js -->
+                </div>
             </section>
         </main>
     </div>
