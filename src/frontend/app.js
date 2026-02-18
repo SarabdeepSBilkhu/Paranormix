@@ -99,6 +99,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function appendMessage(role, text, isLoading = false, mlData = null) {
+        // Remove welcome message on first user message if it's there
+        if (role === 'user' && chatMessages.children.length === 1 && chatMessages.children[0].textContent.includes("Welcome")) {
+            chatMessages.children[0].remove();
+        }
+
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${role}`;
         
@@ -120,9 +125,25 @@ document.addEventListener('DOMContentLoaded', () => {
         // If it's the initial report, inject the ML data report
         if (mlData) {
             const report = reportTemplate.content.cloneNode(true);
-            report.getElementById('reportPrediction').textContent = mlData.prediction;
-            report.getElementById('reportConfidence').textContent = `${(mlData.confidence * 100).toFixed(1)}%`;
+            const pred = mlData.prediction.toLowerCase().split(' ')[0]; // Handle "Apparition (Ghost)"
             
+            const badge = report.getElementById('reportBadge');
+            badge.textContent = mlData.prediction;
+            badge.classList.add(`badge-${pred}`);
+            
+            report.getElementById('reportPrediction').textContent = `Classified as ${mlData.prediction}`;
+            
+            // Confidence Bar
+            const conf = mlData.confidence;
+            const bar = report.getElementById('reportConfidenceBar');
+            bar.style.width = `${conf * 100}%`;
+            
+            let label = "Low";
+            if (conf > 0.8) label = "High Certainty";
+            else if (conf > 0.5) label = "Moderate";
+            report.getElementById('reportConfidenceLabel').textContent = label;
+            
+            // Tags
             const signalsContainer = report.getElementById('reportSignals');
             const signals = mlData.signals || [];
             if (signals.length > 0) {
@@ -133,7 +154,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     signalsContainer.appendChild(span);
                 });
             } else {
-                signalsContainer.textContent = 'Standard markers detected.';
+                signalsContainer.textContent = 'None detected.';
+            }
+
+            // Doubt Analysis
+            const doubt = report.getElementById('reportDoubt');
+            const confusions = mlData.likely_confusions || [];
+            if (confusions.length > 0) {
+                doubt.innerHTML = `<p>Model identifies statistical overlap with: <strong>${confusions.join(', ')}</strong>.</p>`;
+            } else {
+                doubt.innerHTML = `<p>Model shows high separation from alternative classes.</p>`;
             }
 
             messageDiv.appendChild(report);
@@ -154,9 +184,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const p = data.ml_data.prediction;
             const suggestions = [
-                `Why was this classified as ${p}?`,
-                `What signals led to this result?`,
-                `How certain is the classification?`
+                `Evidence for ${p}?`,
+                `Model uncertainty?`,
+                `Summary report`
             ];
 
             suggestions.forEach(q => {
@@ -182,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
         suggestedQuestions.style.display = 'none';
         
         // Initial Local Welcome
-        const welcomeText = "Welcome. I am Paranormix, your autonomous paranormal narrative investigator. Please share a narrative of supernatural events, and I will perform a machine learning analysis to classify the phenomena.";
+        const welcomeText = "Welcome. I am Paranormix, your autonomous paranormal narrative investigator. Please share a narrative to begin machine learning analysis.";
         appendMessage('ai', welcomeText);
         
         chatInput.value = '';
