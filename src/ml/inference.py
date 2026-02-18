@@ -76,20 +76,43 @@ class ParanormalInvestigator:
             
             # Final Categorical Certainty (Capped by Stability)
             certainty = purity
+            
+            # Confidence Band Mapping
+            if primary_prob >= 0.6: band = "High"
+            elif primary_prob >= 0.35: band = "Moderate"
+            else: band = "Low"
+            
+            # Stability Reporting
             resolution_limit = None
+            stability_explanation = "Model profile stable for this class."
 
             if stability < 0.3:
-                resolution_limit = "CLASS_OVERLAP_BOUNDARY (High Historical Confusion)"
+                resolution_limit = "CLASS_OVERLAP_BOUNDARY"
+                stability_explanation = f"High historical overlap detected between {prediction} ↔ Apparition."
                 if certainty == "High": certainty = "Medium"
                 elif certainty == "Medium": certainty = "Low"
             elif stability < 0.6:
-                resolution_limit = "MODERATE_RESOLUTION_LIMIT (Data Constraint)"
+                resolution_limit = "MODERATE_RESOLUTION_LIMIT"
+                stability_explanation = "Model stability: Moderate (data constraint/minor overlap)."
                 if certainty == "High": certainty = "Medium"
+
+            # Signal Grouping (Descriptive Only)
+            pattern_labels = {
+                "Pattern_A": "Kinetic / Physical disturbance",
+                "Pattern_B": "Visual / Optical anomaly",
+                "Pattern_C": "Cognitive / Information-based",
+                "Pattern_D": "Sensory / Temperature shift"
+            }
+            
+            observed = [pattern_labels.get(p, p) for p in signals["evidence"]]
+            absent = [pattern_labels.get(p.replace("ABSENT_", ""), p) for p in signals["absent"] if "Pattern_" in p]
 
             # Prepare Data Artifacts
             max_val = max(prob_dict.values()) if prob_dict else 1
             normalized_scores = {k: v/max_val for k, v in prob_dict.items()}
-            margins = {k: primary_prob - v for k, v in prob_dict.items() if k != winner}
+            
+            # Sorted Class Probabilities for Ranking
+            sorted_probs = [{"class": k, "p": v} for k, v in raw_ranked]
 
             drivers = {
                 "multi_class_overlap": gap < 0.2,
@@ -101,24 +124,25 @@ class ParanormalInvestigator:
             print(f"ERROR: Measurement Failure: {e}")
             prediction = "unknown"
             certainty = "Low"
-            resolution_limit = "Computation_Error"
+            band = "Low"
+            stability_explanation = "Computation_Error"
             normalized_scores = {}
-            margins = {}
             drivers = {}
-            ranked_with_labels = []
+            sorted_probs = []
+            observed = []
+            absent = []
 
         return {
             "prediction": prediction,
             "certainty": certainty,
-            "resolution_limit": resolution_limit,
-            "detected_patterns": signals["evidence"],
-            "modifiers": signals["modifiers"],
-            "constraints": signals["absent"],
+            "confidence_band": band,
+            "stability_status": stability_explanation,
+            "observed_signals": observed,
+            "absent_signals": absent,
             "ranked_matches": ranked_with_labels[:3],
             "chart_data": {
                 "class_scores": normalized_scores,
-                "signal_contributions": category_weights,
-                "margins": margins,
+                "sorted_distribution": sorted_probs,
                 "certainty_drivers": drivers
             }
         }

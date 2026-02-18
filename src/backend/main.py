@@ -42,23 +42,21 @@ else:
     client = None
     print("WARNING: GROQ_API_KEY not found. Chat functionality will be disabled.")
 
-# System prompt for chatbot
-SYSTEM_PROMPT = """You are Paranormix, a conversational investigator's assistant. Your job is to translate complex ML analysis into human-friendly, grounded insights.
+# System prompt for analyst chat
+SYSTEM_PROMPT = """You are the Paranormix Technical Analyst. Your role is to decode and explain the system's Machine Learning diagnostics for research purposes.
 
-CONVERSATIONAL PROTOCOL:
-1. No Meta-Language: Never say "The analysis report shows," "Selected class is," or "The data indicates." Instead, anchor descriptions in the user's narrative (e.g., "This means for your account...", "Your story aligns most with...").
+ANALYST PROTOCOL:
+1. Research Tone: Use professional, neutral, and precise language. Avoid speculative "investigator" roleplay.
 2. Progressive Disclosure:
-   - Turn 1 (Initial Report): ONLY confirm the analysis is done, state the primary result and confidence, and invite specific questions. Do NOT list signals, competitors, or boundaries yet.
-   - Subsequent Turns: Reveal details ONLY when asked. If asked "why," explain the conceptual influence of signals rather than listing technical pattern IDs.
-3. Natural Translation: Translate internal codes (like Pattern_A) into human terms (like "physical disturbance") using the provided Translation Key.
-4. Anchoring: Always link findings back to the user's specific story details to make the interaction feel personal and grounded.
+   - Initial Response: Confirm successful diagnostic axial capture. State primary diagnosis, confidence band (High/Moderate/Low), and model stability status.
+   - Follow-up: Reveal specific observed signals or resolution boundary details ONLY when the user interrogates that specific metric.
+3. Grounded Interpretation: Translate technical signals (e.g., "Kinetic disturbance") into conceptual definitions. Do NOT speculate on the "truth" or "haunting" of the story.
+4. Transparency: If asked "why," focus on the statistical presence of patterns in the narrative and class overlap boundaries.
 
-STRICT BOUNDARIES:
-- You do NOT decide the classification; you decode it.
-- You do NOT claim insight into model weights.
-- You do NOT judge the truth of the narrative.
-
-Tone: Professional, empathetic, direct, and conversational.
+STRICT CONSTRAINTS:
+- No emojis, flair, or robotic meta-prefixes ("Based on my analysis...").
+- Identity Lock: You must never contradict the DOMINANT class reported in the diagnostic reference.
+- Refuse case-level reasoning: You explain *what* the system detected, not *why* the actual paranormal event occurred.
 """
 
 class ChatInput(BaseModel):
@@ -72,21 +70,22 @@ async def root(request: Request):
 
 @app.post("/chat")
 async def chat(input_data: ChatInput):
-    """Unified conversational endpoint for narrative analysis and investigating."""
+    """Unified conversational analyst endpoint for narrative diagnostic decoding."""
     if not client:
         raise HTTPException(
             status_code=503, 
-            detail="Chat functionality unavailable. GROQ_API_KEY not configured."
+            detail="Analyst functionality unavailable. API configuration missing."
         )
 
     session_id = input_data.session_id
     is_initial_analysis = False
+    now = __import__("datetime").datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # Detection: Initial submission vs Follow-up
     if not session_id:
         if len(input_data.user_message) < 50:
             return {
-                "response": "Please share a narrative of at least 50 characters so I can begin the investigation.",
+                "response": "Input insufficient. Narrative must be at least 50 characters for axial analysis.",
                 "session_id": None
             }
         
@@ -99,39 +98,42 @@ async def chat(input_data: ChatInput):
                 narrative=input_data.user_message,
                 prediction=result["prediction"],
                 certainty=result["certainty"],
-                evidence=result.get("detected_patterns", []),
-                modifiers=result.get("modifiers", []),
-                competing=[h['class'] for h in result.get("ranked_matches", [])],
+                evidence=result.get("observed_signals", []),
+                modifiers=[], # Legacy
+                competing=[h['class'] for h in result.get("ranked_matches", []) if h['label'] != 'DOMINANT'],
                 chart_data=result["chart_data"]
             )
 
+            # Store additional metadata locally in session
+            session = session_store.get_session(session_id)
+            session['timestamp'] = now
+            session['word_count'] = len(input_data.user_message.split())
+            session['band'] = result.get("confidence_band", "Low")
+            session['stability'] = result.get("stability_status", "Unknown")
+            session['absent'] = result.get("absent_signals", [])
+
             # Initialize history with the story and hidden diagnostic report
             session_store.append_message(session_id, "user", f"SUBJECT NARRATIVE: {input_data.user_message}")
-            report_context = f"""INTERNAL DIAGNOSTIC REFERENCE (NOT FOR RECITATION):
+            report_context = f"""DIAGNOSTIC AXIAL CAPTURE [{now}]:
+PRIMARY_DIAGNOSIS: {result['prediction']}
+CONFIDENCE_BAND: {result['confidence_band']}
+STABILITY_INDEX: {result['stability_status']}
 
-TRANSLATION KEY:
-- Pattern_A: Physical disturbance / Kinetic energy
-- Pattern_B: Sensory distortion / Temperature shift
-- Pattern_C: Information-based / Historical matching
-- Pattern_D: Visual anomaly / Residual echo
-- resolution_boundary: Historical model overlap area
+EMPIRICAL SIGNALS:
+- OBSERVED: {', '.join(result.get('observed_signals', ['None']))}
+- ABSENT: {', '.join(result.get('absent_signals', ['None']))}
 
-MEASUREMENT DATA:
-Selected Class: {result['prediction']}
-Certainty: {result['certainty']}
-Detected Patterns: {', '.join(result.get('detected_patterns', ['None']))}
-Absent Patterns: {', '.join(result.get('constraints', ['None']))}
-Competitors: {', '.join([f"{h['class']} ({h['label']})" for h in result.get('ranked_matches', [])])}
-Resolution Limit: {result.get('resolution_limit', 'None')}
+DISTRIBUTION_METRICS:
+{chr(10).join([f"{h['class']}: {h['p']:.2%} ({h['label']})" for h in result.get('ranked_matches', [])])}
 
-Note: Use these details ONLY when asked. Initial turn should be a Confirm-Result-Invite response.
+PROTOCOL: Confirm results on turn 1. Use details to answer specific follow-up questions only.
 """
             session_store.append_message(session_id, "system", report_context)
             is_initial_analysis = True
         except Exception as e:
             import traceback
             traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"ML Diagnostic failed: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Diagnostic capture failed: {str(e)}")
     else:
         # For follow-ups, append user message
         session_store.append_message(session_id, "user", input_data.user_message)
@@ -139,13 +141,13 @@ Note: Use these details ONLY when asked. Initial turn should be a Confirm-Result
     # Load session and check turn limit
     session = session_store.get_session(session_id)
     if not session:
-        raise HTTPException(status_code=404, detail="Session expired. Please restart.")
+        raise HTTPException(status_code=404, detail="Session expired or invalid.")
 
     if not is_initial_analysis:
         turn_count = session_store.increment_turn(session_id)
         if turn_count > int(os.getenv("MAX_CHAT_TURNS", "5")):
             return {
-                "response": "Investigation concluded. Please reset to start a fresh analysis.",
+                "response": "Analysis window closed. Maximum turn limit reached for this session.",
                 "turn_count": turn_count,
                 "session_id": session_id
             }
@@ -157,18 +159,16 @@ Note: Use these details ONLY when asked. Initial turn should be a Confirm-Result
     llm_messages.extend(session_store.get_history(session_id))
 
     try:
-        # Lower temperature for diagnostic reliability
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=llm_messages,
             max_tokens=400,
-            temperature=0.1
+            temperature=0.0 # Extreme grounding for research validity
         )
 
         bot_response = response.choices[0].message.content
         session_store.append_message(session_id, "assistant", bot_response)
 
-        
         return {
             "response": bot_response,
             "turn_count": turn_count,
@@ -177,10 +177,16 @@ Note: Use these details ONLY when asked. Initial turn should be a Confirm-Result
             "ml_data": {
                 "prediction": session['prediction'],
                 "certainty": session['certainty'],
-                "evidence": session['evidence'],
-                "modifiers": session['modifiers'],
-                "competing": session['competing'],
-                "chart_data": session['chart_data']
+                "band": session.get('band'),
+                "stability": session.get('stability'),
+                "observed": session['evidence'],
+                "absent": session.get('absent'),
+                "chart_data": session['chart_data'],
+                "metadata": {
+                    "timestamp": session.get('timestamp'),
+                    "words": session.get('word_count'),
+                    "version": "3.0.1-research"
+                }
             } if is_initial_analysis else None
         }
     except Exception as e:

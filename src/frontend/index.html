@@ -12,40 +12,55 @@
         <header class="main-header">
             <div class="brand">
                 <span class="logo-text">PARANORMIX</span>
-                <span class="status-pill">V2.1_STABLE</span>
+                <span class="status-pill mono">SYSTEM_AXIAL_V3.01_RESEARCH</span>
+            </div>
+            <div class="header-metadata mono" id="sessionHeader">
+                <!-- Session Metadata injected here -->
             </div>
             <div class="header-controls">
-                <button id="resetBtn" class="reset-link">Terminate Investigation</button>
+                <button id="resetBtn" class="reset-link mono">AXIAL_RESET</button>
             </div>
         </header>
 
-        <main class="main-layout">
-            <!-- Left Panel: Diagnostic Dashboard (Populates on first run) -->
-            <section id="diagnosticDashboard" class="dashboard-hidden">
-                <!-- Injected via app.js -->
+        <main class="main-layout research-grid">
+            <!-- Left Panel: Empirical Metrics (Static per Analysis) -->
+            <section id="metricPanel" class="research-panel panel-hidden">
+                <div class="panel-header">
+                    <h2 class="mono">EMPIRICAL_DATA_AXIS</h2>
+                </div>
+                <div id="diagnosticDashboard" class="axial-scroll">
+                    <!-- Injected via app.js -->
+                </div>
             </section>
 
-            <!-- Right Panel: Conversation Terminal -->
-            <section class="terminal-panel">
-                <div id="chatContainer" class="terminal-output">
+            <!-- Right Panel: Interactive Analyst Dialogue (Dynamic) -->
+            <section class="research-panel">
+                <div class="panel-header flex-between">
+                    <h2 class="mono">ANALYST_DIALOGUE_INTERFACE</h2>
+                    <span class="status-indicator mono" id="analystStatus">READY</span>
+                </div>
+                
+                <div id="chatContainer" class="terminal-output analyst-scroll">
                     <!-- Messages appear here -->
                 </div>
 
-                <div class="terminal-input-group">
+                <div class="interrogation-input-group">
+                    <div id="suggestedPrompts" class="prompt-suggestions mono">
+                        <!-- Suggested follow-up prompts injected here -->
+                    </div>
                     <div class="input-wrapper">
-                        <textarea id="userInput" placeholder="Submit narrative for multi-axial analysis..." rows="1"></textarea>
+                        <textarea id="userInput" placeholder="Awaiting subject narrative for axial capture..." rows="1"></textarea>
                         <button id="sendBtn" class="primary-action">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-                            </svg>
+                            <span class="mono">SUBMIT</span>
                         </button>
                     </div>
                 </div>
 
-                <footer class="terminal-footer">
-                    <div class="footer-meta">
-                        <span class="meta-item">Powered by Groq-Llama3</span>
-                        <span class="meta-item">Logic: Scikit-Learn Ensemble</span>
+                <footer class="terminal-footer research-footer">
+                    <div class="footer-meta mono">
+                        <span>MODEL: SGD_LOGISTIC_REGRESSION_v3</span>
+                        <span>LLM: ANALYST_LLAMA3_DECODER</span>
+                        <span id="sessionTimestamp">--</span>
                     </div>
                 </footer>
             </section>
@@ -54,30 +69,54 @@
 
     <!-- Dashboard Template -->
     <template id="dashboardTemplate">
-        <div class="report-container">
-            <div class="report-top">
-                <div class="prediction-block">
-                    <span class="label-mono">PRIMARY_DIAGNOSIS</span>
-                    <h1 id="dashPrediction">NARRATIVE_UNDETERMINED</h1>
+        <div class="axial-report">
+            <!-- Section 1: Core Output -->
+            <div class="axial-section core-report">
+                <div class="metric-row">
+                    <div class="metric-block">
+                        <span class="label-mono">PRIMARY_DIAGNOSIS</span>
+                        <h1 id="dashPrediction" class="prediction-text">UNDETERMINED</h1>
+                    </div>
+                    <div class="metric-block align-right">
+                        <span class="label-mono">CONFIDENCE_BAND</span>
+                        <div id="dashBand" class="band-indicator">--</div>
+                    </div>
                 </div>
-                <div class="certainty-block">
-                    <div id="dashCertainty" class="cert-pill">MEASURING_STABILITY...</div>
+                <div class="stability-text mono" id="dashStability">
+                    Awaiting stability calculation...
                 </div>
             </div>
 
-            <div class="report-body">
-                <div class="report-card">
-                    <h3 class="card-title">Class Distribution</h3>
-                    <div class="chart-box" id="chartClassScore"></div>
+            <!-- Section 2: Distribution -->
+            <div class="axial-section">
+                <h3 class="section-title mono">CLASS_PROBABILITY_DISTRIBUTION</h3>
+                <div class="chart-box" id="chartClassScore"></div>
+            </div>
+
+            <!-- Section 3: Ranked Matches -->
+            <div class="axial-section">
+                <h3 class="section-title mono">COMPETING_AXES / RESOLUTION</h3>
+                <div id="rankedMatches" class="ranked-list mono">
+                    <!-- Ranked items injected here -->
                 </div>
+            </div>
 
-                <div class="report-card">
-                    <h3 class="card-title">Categorical Drivers</h3>
-                    <div class="check-box-group" id="chartDrivers"></div>
+            <!-- Section 4: Grouped Signals -->
+            <div class="axial-section">
+                <h3 class="section-title mono">DETECTED_SIGNALS</h3>
+                <div class="signal-group">
+                    <h4 class="mono small">OBSERVED_PATTERNS</h4>
+                    <ul id="observedSignals" class="signal-list"></ul>
                 </div>
-
-
-
+                <div class="signal-group">
+                    <h4 class="mono small">ABSENT_INDICATORS</h4>
+                    <ul id="absentSignals" class="signal-list negative"></ul>
+                </div>
+            </div>
+            
+            <div class="session-audit mono">
+                <span>WORD_COUNT: <span id="dashWordCount">0</span></span>
+                <span>MODEL_VERSION: 3.0.1-RESEARCH</span>
             </div>
         </div>
     </template>

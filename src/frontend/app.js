@@ -1,30 +1,38 @@
 /**
- * Paranormix - Diagnostic Suite Logic V2
+ * Paranormix - XAI Diagnostic Suite V3
+ * Research Terminal Implementation
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Elements
+    // Structural Elements
     const chatContainer = document.getElementById('chatContainer');
     const diagnosticDashboard = document.getElementById('diagnosticDashboard');
+    const metricPanel = document.getElementById('metricPanel');
     const userInput = document.getElementById('userInput');
     const sendBtn = document.getElementById('sendBtn');
     const resetBtn = document.getElementById('resetBtn');
     const dashboardTemplate = document.getElementById('dashboardTemplate');
+    const suggestedPrompts = document.getElementById('suggestedPrompts');
+    
+    // Metadata Elements
+    const sessionHeader = document.getElementById('sessionHeader');
+    const sessionTimestamp = document.getElementById('sessionTimestamp');
+    const analystStatus = document.getElementById('analystStatus');
 
     let sessionId = null;
 
-    // --- Core Logic ---
+    // --- Core Interaction ---
 
-    async function sendMessage() {
-        const message = userInput.value.trim();
+    async function sendMessage(manualText = null) {
+        const message = manualText || userInput.value.trim();
         if (!message) return;
 
         const isInitial = !sessionId;
 
         userInput.value = '';
         appendMessage('user', message);
-
         setLoading(true);
+        clearPrompts();
 
         try {
             const response = await fetch('/chat', {
@@ -38,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
-                throw new Error(errData.detail || `Server Error: ${response.status}`);
+                throw new Error(errData.detail || `AXIAL_FAILURE: ${response.status}`);
             }
 
             const data = await response.json();
@@ -47,76 +55,135 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (isInitial && data.ml_data) {
                 renderDashboard(data.ml_data);
+                updateSessionMetadata(data.ml_data);
+                renderPrompts(data.ml_data);
             }
 
-            appendMessage('ai', data.response || "NO_RESPONSE_RECEIVED");
+            appendMessage('ai', data.response);
         } catch (err) {
             console.error('Diagnostic error:', err);
-            appendMessage('ai', `SYSTEM_ERROR: ${err.message || 'Failed to establish diagnostic link.'}`);
+            appendMessage('ai', `CRITICAL_SYSTEM_ERROR: ${err.message}`);
         } finally {
             setLoading(false);
         }
     }
 
-    // --- UI Rendering ---
+    // --- Research Rendering ---
 
     function renderDashboard(mlData) {
+        metricPanel.classList.remove('panel-hidden');
         diagnosticDashboard.innerHTML = '';
-        diagnosticDashboard.classList.remove('dashboard-hidden');
         
         const report = dashboardTemplate.content.cloneNode(true);
         const charts = mlData.chart_data;
 
-        // Header
+        // 1. Core Output & Stability
         report.getElementById('dashPrediction').textContent = mlData.prediction;
-        const certainty = report.getElementById('dashCertainty');
-        certainty.textContent = mlData.certainty;
-        certainty.className = `cert-pill cert-${mlData.certainty.toLowerCase()}`;
+        const band = report.getElementById('dashBand');
+        band.textContent = mlData.band.toUpperCase();
+        band.className = `band-indicator band-${mlData.band.toLowerCase()}`;
+        report.getElementById('dashStability').textContent = mlData.stability;
 
-        // 1. Class Score Bar Chart
+        // 2. Class Distribution (Sorted)
         const scoreContainer = report.getElementById('chartClassScore');
-        Object.entries(charts.class_scores).forEach(([cls, score]) => {
+        const sortedDist = charts.sorted_distribution || [];
+        sortedDist.forEach(item => {
             const row = document.createElement('div');
             row.className = 'bar-row';
             row.innerHTML = `
-                <div class="bar-lbl">${cls.toUpperCase()}</div>
-                <div class="bar-out"><div class="bar-in" style="width: ${score * 100}%"></div></div>
+                <div class="bar-lbl">${item.class}</div>
+                <div class="bar-out"><div class="bar-in" style="width: ${item.p * 100}%"></div></div>
             `;
             scoreContainer.appendChild(row);
         });
 
-        // 2. Certainty Drivers
-        const driverContainer = report.getElementById('chartDrivers');
-        const driverMap = {
-            "multi_class_overlap": "PROBABILITY_OVERLAP",
-            "resolution_boundary": "RESOLUTION_BOUNDARY",
-            "signal_conflict": "SIGNAL_CONFLICT"
-        };
-        Object.entries(charts.certainty_drivers).forEach(([key, active]) => {
-            const item = document.createElement('div');
-            item.className = `chk-row ${active ? 'active' : ''}`;
-            item.innerHTML = `
-                <div class="chk-box ${active ? 'active' : ''}"></div>
-                <span>${driverMap[key] || key.toUpperCase()}</span>
+        // 3. Ranked Matches
+        const rankContainer = report.getElementById('rankedMatches');
+        mlData.ranked_matches.forEach(match => {
+            const div = document.createElement('div');
+            div.className = 'rank-item';
+            div.innerHTML = `
+                <span>${match.class.toUpperCase()}</span>
+                <span class="rank-tag">${match.label} (${(match.p * 100).toFixed(1)}%)</span>
             `;
-            driverContainer.appendChild(item);
+            rankContainer.appendChild(div);
         });
 
+        // 4. Grouped Signals
+        const observedList = report.getElementById('observedSignals');
+        if (mlData.observed.length > 0) {
+            mlData.observed.forEach(sig => {
+                const li = document.createElement('li');
+                li.textContent = sig;
+                observedList.appendChild(li);
+            });
+        } else {
+            observedList.innerHTML = '<li style="background:none; border:none; opacity:0.5;">No patterns detected</li>';
+        }
+
+        const absentList = report.getElementById('absentSignals');
+        mlData.absent.forEach(sig => {
+            const li = document.createElement('li');
+            li.textContent = sig;
+            absentList.appendChild(li);
+        });
+
+        // 5. Audit Details
+        report.getElementById('dashWordCount').textContent = mlData.metadata.words;
 
         diagnosticDashboard.appendChild(report);
     }
 
+    function updateSessionMetadata(mlData) {
+        const meta = mlData.metadata;
+        sessionHeader.innerHTML = `
+            <span>SID: ${sessionId.slice(0, 8)}</span> | 
+            <span>AXIS: MULTI</span> | 
+            <span>W: ${meta.words}</span>
+        `;
+        sessionTimestamp.textContent = `TS: ${meta.timestamp}`;
+    }
+
+    function renderPrompts(mlData) {
+        clearPrompts();
+        const prompts = [
+            "What would increase the confidence band?",
+            "Explain the resolution boundary for this case.",
+            "How should I interpret the absent indicators?"
+        ];
+        
+        // Contextual prompt for top contender
+        if (mlData.ranked_matches.length > 1) {
+            const contender = mlData.ranked_matches[1].class;
+            prompts.unshift(`Why is ${contender} a contender?`);
+        }
+
+        prompts.forEach(text => {
+            const chip = document.createElement('div');
+            chip.className = 'prompt-chip';
+            chip.textContent = text;
+            chip.onclick = () => {
+                userInput.value = text;
+                sendMessage();
+            };
+            suggestedPrompts.appendChild(chip);
+        });
+    }
+
+    function clearPrompts() {
+        suggestedPrompts.innerHTML = '';
+    }
+
     function appendMessage(role, text) {
         const div = document.createElement('div');
-        div.className = `message ${role}`;
+        div.className = `message ${role} mono`;
         
-        // Safety check for undefined/null text
         const safeText = String(text || "");
-        
-        // Format bold text
-        const formatted = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+        const formatted = safeText
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
+            
         div.innerHTML = formatted;
-        
         chatContainer.appendChild(div);
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
@@ -124,24 +191,24 @@ document.addEventListener('DOMContentLoaded', () => {
     function setLoading(isLoading) {
         sendBtn.disabled = isLoading;
         userInput.disabled = isLoading;
-        if (isLoading) {
-            sendBtn.innerHTML = '<div class="loader"></div>';
-        } else {
-            sendBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
-        }
+        analystStatus.textContent = isLoading ? 'PROCESSING...' : 'READY';
+        analystStatus.style.color = isLoading ? 'var(--band-low)' : 'var(--band-high)';
     }
 
     function resetInvestigation() {
         sessionId = null;
         chatContainer.innerHTML = '';
         diagnosticDashboard.innerHTML = '';
-        diagnosticDashboard.classList.add('dashboard-hidden');
+        metricPanel.classList.add('panel-hidden');
+        sessionHeader.innerHTML = '';
+        sessionTimestamp.textContent = '--';
+        clearPrompts();
         userInput.value = '';
-        appendMessage('ai', 'INVESTIGATION_TERMINATED. Terminal ready for new signal input.');
+        appendMessage('ai', 'AXIAL_RESET_COMPLETE. Terminal awaiting new signal input.');
     }
 
     // --- Listeners ---
-    sendBtn.addEventListener('click', sendMessage);
+    sendBtn.addEventListener('click', () => sendMessage());
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -150,8 +217,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     resetBtn.addEventListener('click', resetInvestigation);
 
+    // Initial Greeting
     appendMessage(
         "ai",
-        "Hello! I'm here to help you analyze your narrative. When you're ready, paste your story below and I'll begin the investigation."
+        "**PARANORMIX_ANALYST_DECODER_READY.**\n\nPlease submit a subject narrative for axial capture and empirical pattern analysis. Minimum 50 characters required for statistical significance."
     );
 });
