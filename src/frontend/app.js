@@ -102,45 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
             driverContainer.appendChild(item);
         });
 
-        // 3. Signal Contribution (Stacked Bar)
-        const contribChart = report.getElementById('chartContribution');
-        const contribs = charts.signal_contributions || {}; 
-        const total = Object.values(contribs).reduce((a, b) => a + b, 0) || 1;
-        
-        const catMap = { 
-            "Pattern_A": { label: "Kinetic / Physical", class: "phys" }, 
-            "Pattern_B": { label: "Sensory / Temp", class: "sensor" }, 
-            "Pattern_C": { label: "Cognitive / Information", class: "psych" }, 
-            "Pattern_D": { label: "Visual / Optical", class: "visual" } 
-        };
-        Object.entries(contribs).forEach(([cat, val]) => {
-            const p = (val / total) * 100;
-            const config = catMap[cat] || { label: cat, class: "phys" };
-            if (p > 0) {
-                const seg = document.createElement('div');
-                seg.className = `seg ${config.class}`;
-                seg.style.width = `${p}%`;
-                seg.title = `${config.label}: ${val} signals`;
-                contribChart.appendChild(seg);
-            }
-        });
 
-        // 4. Competing Margin
-        const marginContainer = report.getElementById('chartMargins');
-        const sortedMargins = Object.entries(charts.margins)
-            .sort((a,b) => a[1] - b[1])
-            .slice(0, 3);
-
-        sortedMargins.forEach(([cls, gap]) => {
-            const row = document.createElement('div');
-            row.className = 'bar-row'; 
-            const gapWidth = Math.max(0, (1 - gap) * 100);
-            row.innerHTML = `
-                <div class="bar-lbl">${cls.toUpperCase()}</div>
-                <div class="bar-out"><div class="bar-in" style="width: ${gapWidth}%; opacity: 0.5;"></div></div>
-            `;
-            marginContainer.appendChild(row);
-        });
 
         // 5. Global Heatmap
         const heatContainer = report.getElementById('chartHeatmap');
