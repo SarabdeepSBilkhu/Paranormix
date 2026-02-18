@@ -171,15 +171,15 @@ class ParanormalInvestigator:
         
         # Raw Detection Patterns (No Class Labeling)
         patterns_detection = {
-            "Pattern_A": ["thrown", "moved", "crash", "bang", "slam", "rattle"], # Impact
-            "Pattern_B": ["saw", "figure", "silhouette", "white lady", "ghost", "apparition"], # Visual
-            "Pattern_C": ["voice in head", "insane", "hallucination", "dream", "wake up", "remembering"], # Cognitive
-            "Pattern_D": ["cold", "smell", "chill", "touch"] # Sensory
+            "Pattern_A": ["thrown", "moved", "crash", "bang", "slam", "rattle", "knocking", "shaking", "pushed", "broken", "glass", "shattered"], # Impact
+            "Pattern_B": ["saw", "figure", "silhouette", "white lady", "ghost", "apparition", "shadow", "tall man", "orb", "mist", "glowing"], # Visual
+            "Pattern_C": ["voice", "insane", "hallucination", "dream", "wake up", "remembering", "talking", "whisper", "shout", "heard my name", "imagination"], # Cognitive
+            "Pattern_D": ["cold", "smell", "chill", "touch", "freeze", "odor", "breath", "scratched", "burning"] # Sensory
         }
         
         patterns_context = {
-            "Context_Alpha": ["legend", "myth", "curse", "ancient", "ritual"],
-            "Context_Beta": ["i think", "i believe", "i know it was", "spirits"]
+            "Context_Alpha": ["legend", "myth", "curse", "ancient", "ritual", "history", "unsolved", "murder", "cemetery", "graveyard"],
+            "Context_Beta": ["i think", "i believe", "i know it was", "spirits", "demon", "possessed", "haunted", "scared", "terrified"]
         }
         
         for name, keywords in patterns_detection.items():

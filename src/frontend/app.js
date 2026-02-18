@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 observedList.appendChild(li);
             });
         } else {
-            observedList.innerHTML = '<li style="background:none; border:none; opacity:0.5;">No patterns detected</li>';
+            observedList.innerHTML = '<li style="background:none; border:none; opacity:0.5; font-style:italic;">No significant patterns detected in current axial capture.</li>';
         }
 
         const absentList = report.getElementById('absentSignals');
