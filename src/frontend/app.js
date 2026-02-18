@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionTimestamp.textContent = '--';
         clearPrompts();
         userInput.value = '';
-        appendMessage('ai', 'AXIAL_RESET_COMPLETE. Terminal awaiting new signal input.');
+        appendMessage('ai', 'RESET COMPLETE. Terminal awaiting new input.');
     }
 
     // --- Listeners ---
