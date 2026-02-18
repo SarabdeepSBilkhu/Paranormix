@@ -43,22 +43,26 @@ else:
     print("WARNING: GROQ_API_KEY not found. Chat functionality will be disabled.")
 
 # System prompt for chatbot
-SYSTEM_PROMPT = """You are the "Paranormix Technical Manual", a non-interpretive interface for the diagnostic system.
-Your role is to act as a technical reference guide. You transcribe measurement data and explain system definitions.
+SYSTEM_PROMPT = """You are Paranormix, an AI investigation assistant that explains machine learning analysis results.
 
-NON-NEGOTIABLE OPERATIONAL RULES:
-1. NO CASE-LEVEL REASONING: You must NEVER explain "why" a specific narrative was assigned to a class. You do not have access to the model's internal decision logic for individual cases.
-2. SYSTEM TRANSCRIPTION: In the initial report, you only transcribe the detection markers, constraints, ranked matches (with dominance labels), and stability-based certainty exactly as provided in the context.
-3. CONTEXTUAL EXPLANATION: If asked, you may explain WHAT a class represents (e.g., "Folklore represents narratives aligned with historical myth cycles") or HOW to read a metric (e.g., "Resolution Boundaries indicate historical model overlap between similar classes").
-4. IDENTITY LOCKING: You must report the "Selected Class" exactly as provided. Never reinterpret or recompute identity.
-5. NO INVESTIGATION: You are not an investigator. You are a user manual that can talk. Do not speculate on witness intent, story plausibility, or hidden meanings.
+Your role:
+• Help users understand the analysis report produced by the ML system
+• Answer questions about predictions, confidence, detected signals, and uncertainty
+• Clarify what different classes and metrics mean in general terms
 
-Response Format:
-- Detection: [Pattern List]
-- Constraints: [Absent Identifiers]
-- Ranked Matches: [Class (Label)] > [Class (Label)]
-- Certainty: [Value] (Factor: [Stability Property])
-- Resolution Boundaries: [Class-Level Limit]
+Strict boundaries:
+• You do NOT decide the classification
+• You do NOT claim insight into internal model weights
+• You ONLY explain using the provided analysis data
+• You do NOT judge whether the narrative is true or false
+
+Allowed explanations:
+• Why certain narrative signals commonly influence a class
+• What confidence and uncertainty indicate
+• How to interpret overlapping probabilities
+• What each paranormal category represents
+
+If asked something outside the analysis scope, state that it cannot be determined from the model output.
 """
 
 class ChatInput(BaseModel):
@@ -107,16 +111,24 @@ async def chat(input_data: ChatInput):
 
             # Initialize history with the story and hidden diagnostic report
             session_store.append_message(session_id, "user", f"SUBJECT NARRATIVE: {input_data.user_message}")
-            report_context = f"""DIAGNOSTIC REPORT SUMMARY (FOR AI CONTEXT ONLY):
-- Selected Class: {result['prediction']}
-- Categorical Certainty: {result['certainty']}
-- Raw Detected Patterns: {', '.join(result.get('detected_patterns', ['None']))}
-- Binary Constraints: {', '.join(result.get('constraints', ['None']))}
-- Contextual Patterns: {', '.join(result.get('modifiers', ['None']))}
-- Ranked Class Matches: {', '.join([f"{h['class']} ({h['label']})" for h in result.get('ranked_matches', [])])}
-- Resolution Boundary: {result.get('resolution_limit', 'None (Stable Class)')}
+            report_context = f"""INTERNAL ANALYSIS REPORT (REFERENCE DATA — DO NOT ALTER):
 
-INSTRUCTIONS: Act as the TECHNICAL MANUAL. Report detections, constraints, matches, and certainty. Never explain "why" for this specific case.
+Selected Class: {result['prediction']}
+Confidence: {result['certainty']}
+
+Detected Signals:
+- {', '.join(result.get('detected_patterns', ['None']))}
+
+Contextual Modifiers:
+- {', '.join(result.get('modifiers', ['None']))}
+
+Competing Classes:
+- {', '.join([f"{h['class']} ({h['label']})" for h in result.get('ranked_matches', [])])}
+
+Resolution Boundary:
+- {result.get('resolution_limit', 'None')}
+
+This data represents the output of the ML model. Use it as factual input when answering user questions.
 """
             session_store.append_message(session_id, "system", report_context)
             is_initial_analysis = True
@@ -156,9 +168,20 @@ INSTRUCTIONS: Act as the TECHNICAL MANUAL. Report detections, constraints, match
             max_tokens=400,
             temperature=0.1
         )
-        
-        bot_response = response.choices[0].message.content
+
+        raw_response = response.choices[0].message.content
+
+        if is_initial_analysis:
+            bot_response = (
+                "Analysis complete. I’ve classified the narrative and identified key signals. "
+                "You can ask about the prediction, confidence, uncertainty, or how to interpret the results.\n\n"
+                + raw_response
+            )
+        else:
+            bot_response = raw_response
+
         session_store.append_message(session_id, "assistant", bot_response)
+
         
         return {
             "response": bot_response,
