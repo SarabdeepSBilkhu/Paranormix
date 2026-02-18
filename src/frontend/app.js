@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const driverContainer = report.getElementById('chartDrivers');
         const driverMap = {
             "multi_class_overlap": "PROBABILITY_OVERLAP",
-            "modifier_presence": "BIAS_DETECTED",
+            "systemic_ambiguity": "SYSTEMIC_STABILITY_LIMIT",
             "signal_contradiction": "SIGNAL_CONFLICT"
         };
         Object.entries(charts.certainty_drivers).forEach(([key, active]) => {
