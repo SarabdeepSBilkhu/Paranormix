@@ -125,45 +125,59 @@ document.addEventListener('DOMContentLoaded', () => {
         // If it's the initial report, inject the ML data report
         if (mlData) {
             const report = reportTemplate.content.cloneNode(true);
-            const pred = mlData.prediction.toLowerCase().split(' ')[0]; // Handle "Apparition (Ghost)"
+            const pred = mlData.prediction.toLowerCase().split(' ')[0];
             
             const badge = report.getElementById('reportBadge');
             badge.textContent = mlData.prediction;
             badge.classList.add(`badge-${pred}`);
             
-            report.getElementById('reportPrediction').textContent = `Classified as ${mlData.prediction}`;
+            report.getElementById('reportPrediction').textContent = `Dominant Diagnosis: ${mlData.prediction}`;
             
-            // Confidence Bar
-            const conf = mlData.confidence;
-            const bar = report.getElementById('reportConfidenceBar');
-            bar.style.width = `${conf * 100}%`;
+            // Certainty
+            const certainty = report.getElementById('reportCertainty');
+            certainty.textContent = mlData.certainty;
+            certainty.classList.add(`certainty-${mlData.certainty.toLowerCase()}`);
             
-            let label = "Low";
-            if (conf > 0.8) label = "High Certainty";
-            else if (conf > 0.5) label = "Moderate";
-            report.getElementById('reportConfidenceLabel').textContent = label;
-            
-            // Tags
-            const signalsContainer = report.getElementById('reportSignals');
-            const signals = mlData.signals || [];
-            if (signals.length > 0) {
-                signals.forEach(s => {
+            // Signals (Evidence)
+            const evidenceContainer = report.getElementById('reportEvidence');
+            const evidence = mlData.evidence || [];
+            if (evidence.length > 0) {
+                evidence.forEach(s => {
                     const span = document.createElement('span');
-                    span.className = 'signal-tag';
+                    span.className = 'signal-tag evidence-tag';
                     span.textContent = s;
-                    signalsContainer.appendChild(span);
+                    evidenceContainer.appendChild(span);
                 });
             } else {
-                signalsContainer.textContent = 'None detected.';
+                evidenceContainer.innerHTML = '<span class="none">None Detected</span>';
             }
 
-            // Doubt Analysis
-            const doubt = report.getElementById('reportDoubt');
-            const confusions = mlData.likely_confusions || [];
-            if (confusions.length > 0) {
-                doubt.innerHTML = `<p>Model identifies statistical overlap with: <strong>${confusions.join(', ')}</strong>.</p>`;
+            // Modifiers
+            const modifiersContainer = report.getElementById('reportModifiers');
+            const modifiers = mlData.modifiers || [];
+            if (modifiers.length > 0) {
+                modifiers.forEach(s => {
+                    const span = document.createElement('span');
+                    span.className = 'signal-tag modifier-tag';
+                    span.textContent = s;
+                    modifiersContainer.appendChild(span);
+                });
             } else {
-                doubt.innerHTML = `<p>Model shows high separation from alternative classes.</p>`;
+                modifiersContainer.innerHTML = '<span class="none">None Detected</span>';
+            }
+
+            // Competing Hypotheses
+            const competing = report.getElementById('reportCompeting');
+            const hyps = mlData.competing || [];
+            if (hyps.length > 0) {
+                hyps.forEach(h => {
+                    const div = document.createElement('div');
+                    div.className = 'hypothesis-item';
+                    div.textContent = h;
+                    competing.appendChild(div);
+                });
+            } else {
+                competing.innerHTML = '<div class="hypothesis-item none">No secondary indicators</div>';
             }
 
             messageDiv.appendChild(report);

@@ -13,8 +13,8 @@ class SessionStore:
         self.lock = threading.Lock()
     
     def create_session(self, session_id: str, narrative: str, prediction: str, 
-                      confidence: float, probabilities: dict, key_signals: list,
-                      likely_confusions: list) -> None:
+                      certainty: str, evidence: list, modifiers: list,
+                      competing: list) -> None:
         """Store analysis results in session."""
         with self.lock:
             # Clean expired sessions if at capacity
@@ -24,10 +24,10 @@ class SessionStore:
             self.sessions[session_id] = {
                 "narrative": narrative,
                 "prediction": prediction,
-                "confidence": confidence,
-                "probabilities": probabilities,
-                "key_signals": key_signals,
-                "likely_confusions": likely_confusions,
+                "certainty": certainty,
+                "evidence": evidence,
+                "modifiers": modifiers,
+                "competing": competing,
                 "timestamp": datetime.now(),
                 "turn_count": 0,
                 "messages": [] # Conversation history

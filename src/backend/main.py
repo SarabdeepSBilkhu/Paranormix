@@ -43,19 +43,22 @@ else:
     print("WARNING: GROQ_API_KEY not found. Chat functionality will be disabled.")
 
 # System prompt for chatbot
-SYSTEM_PROMPT = """You are “Paranormix”, an analytical AI investigator.
-Your role: Interpret ML investigative reports for paranormal narratives.
+SYSTEM_PROMPT = """You are “Paranormix”, an analytical diagnostic investigator. 
+Your role: Provide declarative, minimal interpretations of ML diagnostic reports.
 
 Response Guidelines:
-1. One Summary Only: Provide a single, cohesive analysis (200 words max). Do NOT repeat prediction/confidence values that are already visible in the report card.
-2. Thematic Focus: Explain the linguistic "Why" using identified narrative signals.
-3. Uncertainty Management: Reference statistical overlap (Doubt) concisely.
-4. Professional Tone: Remain factual and academic. Do NOT judge reality or encourage belief.
+1. Diagnosis Only: State the primary classification and certainty. Do NOT interpret or reinforce the narrative.
+2. Structured Comparison: Briefly list competing explanations in order of evidence strength.
+3. Signal Verification: List direct textual evidence cues vs interpretive/cultural modifiers.
+4. Professional Minimalism: No opinions, no validation of belief, no narrative speculation.
+5. Surface Ambiguity: If evidence is mixed, explicitly state the limitation of the current diagnosis.
 
-Constraints:
-- No opinions.
-- No new narrative details.
-- No repetition of the visual report card data unless adding deep interpretive value.
+Output Example:
+Target Class: [Class]
+Certainty: [High/Medium/Low]
+Competing: [List]
+Evidence: [Bones of the story]
+Modifiers: [Context/Bias]
 """
 
 class ChatInput(BaseModel):
@@ -95,26 +98,28 @@ async def chat(input_data: ChatInput):
                 session_id=session_id,
                 narrative=input_data.user_message,
                 prediction=result["prediction"],
-                confidence=result["confidence"],
-                probabilities=result["probabilities"],
-                key_signals=result.get("key_signals", []),
-                likely_confusions=result.get("likely_confusions", [])
+                certainty=result["certainty"],
+                evidence=result["evidence_signals"],
+                modifiers=result["interpretive_modifiers"],
+                competing=result["competing_hypotheses"]
             )
             
-            # Initialize history with the story and hidden report
+            # Initialize history with the story and hidden diagnostic report
             session_store.append_message(session_id, "user", input_data.user_message)
             
-            report_context = f"""MACHINE LEARNING INVESTIGATION REPORT:
-            - Prediction: {result['prediction']}
-            - Confidence: {result['confidence']:.2%}
-            - Probabilities: {', '.join([f"{k}: {v:.1%}" for k, v in sorted(result['probabilities'].items(), key=lambda x: -x[1])[:3]])}
-            - Signals: {', '.join(result.get('key_signals', []))}
-            - Likely Confusions: {', '.join(result.get('likely_confusions', []))}
+            report_context = f"""DIAGNOSTIC INVESTIGATION REPORT:
+            - Primary Diagnosis: {result['prediction']}
+            - Certainty: {result['certainty']}
+            - Evidence Signals: {', '.join(result.get('evidence_signals', ['None']))}
+            - Interpretive Modifiers: {', '.join(result.get('interpretive_modifiers', ['None']))}
+            - Competing Hypotheses: {', '.join(result.get('competing_hypotheses', ['None']))}
             """
             session_store.append_message(session_id, "system", report_context)
             is_initial_analysis = True
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"ML Analysis failed: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"ML Diagnostic failed: {str(e)}")
     else:
         # For follow-ups, append user message
         session_store.append_message(session_id, "user", input_data.user_message)
@@ -144,7 +149,7 @@ async def chat(input_data: ChatInput):
             model="llama-3.1-8b-instant",
             messages=llm_messages,
             max_tokens=400,
-            temperature=0.6
+            temperature=0.1 # Keep it deterministic
         )
         
         bot_response = response.choices[0].message.content
@@ -157,9 +162,10 @@ async def chat(input_data: ChatInput):
             "is_initial": is_initial_analysis,
             "ml_data": {
                 "prediction": session['prediction'],
-                "confidence": session['confidence'],
-                "probabilities": session['probabilities'],
-                "signals": session['key_signals']
+                "certainty": session['certainty'],
+                "evidence": session['evidence'],
+                "modifiers": session['modifiers'],
+                "competing": session['competing']
             } if is_initial_analysis else None
         }
     except Exception as e:

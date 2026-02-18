@@ -77,43 +77,36 @@
 
     <!-- Results Template (Hidden, used by JS to inject analysis into bubbles) -->
     <template id="reportTemplate">
-      <div class="investigation-report">
-        <div class="report-header">
-          <span>INVESTIGATION REPORT</span>
-          <span class="report-id">#CASE-ML</span>
-        </div>
-        <div class="report-main">
-          <span class="prediction-badge" id="reportBadge"></span>
-          <span class="prediction-title" id="reportPrediction"></span>
-
-          <div class="confidence-area">
-            <div class="confidence-meta">
-              <span>Analysis Certainty</span>
-              <span id="reportConfidenceLabel"></span>
+        <div class="investigation-report">
+            <div class="report-header">
+                <span>DIAGNOSTIC REPORT</span>
+                <span class="report-id">#DIAG-TRANS</span>
             </div>
-            <div class="confidence-outer">
-              <div class="confidence-inner" id="reportConfidenceBar"></div>
+            <div class="report-main">
+                <span class="prediction-badge" id="reportBadge"></span>
+                <span class="prediction-title" id="reportPrediction"></span>
+                
+                <div class="certainty-label">
+                    Diagnosis Certainty: <span id="reportCertainty" class="certainty-tag"></span>
+                </div>
+
+                <div class="diagnostic-grid">
+                    <div class="diagnostic-col">
+                        <p class="field-label">Hard Evidence</p>
+                        <div class="signal-tags" id="reportEvidence"></div>
+                    </div>
+                    <div class="diagnostic-col">
+                        <p class="field-label">Contextual Modifiers</p>
+                        <div class="signal-tags" id="reportModifiers"></div>
+                    </div>
+                </div>
+
+                <div class="competing-area">
+                    <p class="field-label">Competing Hypotheses</p>
+                    <div class="hypotheses-list" id="reportCompeting"></div>
+                </div>
             </div>
-          </div>
-
-          <div class="report-signals">
-            <p class="field-label">Key Narrative Signals</p>
-            <div class="signal-tags" id="reportSignals"></div>
-          </div>
         </div>
-
-        <div class="report-toggle">
-          <button
-            class="toggle-btn"
-            onclick="this.nextElementSibling.classList.toggle('active')"
-          >
-            Technical Evidence Analysis <span>+</span>
-          </button>
-          <div class="toggle-content">
-            <div id="reportDoubt"></div>
-          </div>
-        </div>
-      </div>
     </template>
 
     <script src="app.js"></script>

@@ -23,70 +23,91 @@ class ParanormalInvestigator:
         if not self.model:
             return {
                 "prediction": "Unknown (Investigator Off-Duty)",
-                "confidence": 0.0,
-                "probabilities": {"Unknown": 1.0},
-                "key_signals": ["Model missing from deployment"],
-                "likely_confusions": []
+                "certainty": "Low",
+                "evidence_signals": [],
+                "interpretive_modifiers": ["Model missing from deployment"],
+                "competing_hypotheses": []
             }
         
-        # Predict class
-        prediction = self.model.predict([text])[0]
+        # 1. Extract Signals (Evidence vs Modifiers)
+        signals = self._extract_diagnostic_signals(text)
         
-        # Get probabilities (now available with log_loss)
+        # 2. Get Model Probabilities for Hypothesis Ranking
         try:
             probabilities = self.model.predict_proba([text])[0]
             class_names = self.model.classes_
+            prob_dict = {name: float(prob) for name, prob in zip(class_names, probabilities)}
             
-            # Create probability dictionary
-            prob_dict = {class_name: float(prob) for class_name, prob in zip(class_names, probabilities)}
+            # Rank all hypotheses by probability
+            ranked_hypotheses = sorted(prob_dict.items(), key=lambda x: x[1], reverse=True)
             
-            # Confidence is the max probability
-            confidence = float(max(probabilities))
+            # Derive Categorical Certainty from dominance gap
+            primary_prob = ranked_hypotheses[0][1]
+            secondary_prob = ranked_hypotheses[1][1] if len(ranked_hypotheses) > 1 else 0
+            gap = primary_prob - secondary_prob
             
-            # Extract key signals (simple keyword detection)
-            key_signals = self._extract_signals(text)
+            if gap > 0.4:
+                certainty = "High"
+            elif gap > 0.15:
+                certainty = "Medium"
+            else:
+                certainty = "Low"
+
+            # 3. Apply Decision Hierarchy (Override model if hierarchy signal is present)
+            # Hierarchy: Psychological > Physical (Polter) > Visual (Appar) > Cultural (Folk)
+            prediction = ranked_hypotheses[0][0]
             
-            # Identify likely confusions (classes with >15% probability)
-            confusions = [cls for cls, prob in prob_dict.items() if prob > 0.15 and cls != prediction]
-            
+            if "psychological indicators" in signals["evidence"]:
+                prediction = "psychological"
+                certainty = "High" if len(signals["evidence"]) == 1 else "Medium"
+            elif "physical disturbance" in signals["evidence"] and prediction not in ["psychological", "poltergeist"]:
+                prediction = "poltergeist"
+            elif "visual apparition" in signals["evidence"] and prediction not in ["psychological", "poltergeist", "apparition"]:
+                prediction = "apparition"
+
         except Exception as e:
-            # Fallback if predict_proba fails
-            print(f"WARNING: Error in predict_proba: {e}")
-            import traceback
-            traceback.print_exc()
-            prob_dict = {}
-            confidence = 0.0
-            key_signals = []
-            confusions = []
-            
+            print(f"ERROR in diagnostic analysis: {e}")
+            prediction = "unknown"
+            certainty = "Low"
+            ranked_hypotheses = []
+
         return {
             "prediction": prediction,
-            "confidence": confidence,
-            "probabilities": prob_dict,
-            "key_signals": key_signals,
-            "likely_confusions": confusions
+            "certainty": certainty,
+            "evidence_signals": signals["evidence"],
+            "interpretive_modifiers": signals["modifiers"],
+            "competing_hypotheses": [h[0] for h in ranked_hypotheses if h[0] != prediction][:2]
         }
     
-    def _extract_signals(self, text):
-        """Extract key narrative signals from text"""
-        signals = []
+    def _extract_diagnostic_signals(self, text):
+        """Rigidly separate hard evidence from interpretive bias"""
         text_lower = text.lower()
+        evidence = []
+        modifiers = []
         
-        # Define signal patterns
-        patterns = {
-            "object movement": ["thrown", "moved", "flying", "levitate", "float"],
-            "loud sounds": ["bang", "crash", "knock", "slam", "thud"],
-            "visual apparition": ["saw", "figure", "shadow", "silhouette", "ghost"],
-            "cold presence": ["cold", "chill", "freeze", "icy"],
-            "first-person account": ["i saw", "i heard", "i felt", "we saw"],
-            "folklore elements": ["legend", "myth", "ancient", "curse", "ritual"]
+        # Evidence (Direct textual cues)
+        patterns_evidence = {
+            "physical disturbance": ["thrown", "moved", "crash", "bang", "slam", "rattle"],
+            "visual apparition": ["saw", "figure", "silhouette", "white lady", "ghost", "apparition"],
+            "psychological indicators": ["voice in head", "insane", "hallucination", "dream", "wake up", "remembering"],
+            "sensory anomaly": ["cold", "smell", "chill", "touch"]
         }
         
-        for signal_name, keywords in patterns.items():
-            if any(keyword in text_lower for keyword in keywords):
-                signals.append(signal_name)
+        # Modifiers (Contextual bias)
+        patterns_modifiers = {
+            "folklore context": ["legend", "myth", "curse", "ancient", "ritual"],
+            "belief/expectation": ["i think", "i believe", "i know it was", "spirits"]
+        }
         
-        return signals[:5]  # Limit to top 5 signals
+        for name, keywords in patterns_evidence.items():
+            if any(k in text_lower for k in keywords):
+                evidence.append(name)
+        
+        for name, keywords in patterns_modifiers.items():
+            if any(k in text_lower for k in keywords):
+                modifiers.append(name)
+                
+        return {"evidence": evidence, "modifiers": modifiers}
 
 if __name__ == "__main__":
     bot = ParanormalInvestigator()
