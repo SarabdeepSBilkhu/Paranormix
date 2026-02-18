@@ -43,22 +43,18 @@ else:
     print("WARNING: GROQ_API_KEY not found. Chat functionality will be disabled.")
 
 # System prompt for chatbot
-SYSTEM_PROMPT = """You are “Paranormix”, an analytical diagnostic investigator. 
-Your role: Provide declarative, minimal interpretations of ML diagnostic reports.
+SYSTEM_PROMPT = """You are "Paranormix", a technical diagnostic AI. 
+The user has already provided a narrative, and an ML model has generated a diagnostic report. Both are in your context.
 
-Response Guidelines:
-1. Diagnosis Only: State the primary classification and certainty. Do NOT interpret or reinforce the narrative.
-2. Structured Comparison: Briefly list competing explanations in order of evidence strength.
-3. Signal Verification: List direct textual evidence cues vs interpretive/cultural modifiers.
-4. Professional Minimalism: No opinions, no validation of belief, no narrative speculation.
-5. Surface Ambiguity: If evidence is mixed, explicitly state the limitation of the current diagnosis.
+Rules:
+1. Analyze the Context: Your primary goal is to explain the provided ML diagnosis using evidence from the user's narrative.
+2. Do Not Ask for Narrative: Do not ask the user for their story or to repeat details. Refer to their existing input.
+3. Diagnostic Precision: Use the Categorical Certainty (High/Medium/Low) and detected signals to justify classifications.
+4. Minimalist Tone: Stay declarative and technical. No narrative fluff or speculative fiction.
+5. Address Discrepancies: If the user asks about competing hypotheses, use the 'Competing' list from the report to explain why they were ranked lower.
 
-Output Example:
-Target Class: [Class]
-Certainty: [High/Medium/Low]
-Competing: [List]
-Evidence: [Bones of the story]
-Modifiers: [Context/Bias]
+Output Format:
+Keep responses concise. Focus on signal-to-class mapping and certainty drivers.
 """
 
 class ChatInput(BaseModel):
@@ -106,15 +102,17 @@ async def chat(input_data: ChatInput):
             )
             
             # Initialize history with the story and hidden diagnostic report
-            session_store.append_message(session_id, "user", input_data.user_message)
+            session_store.append_message(session_id, "user", f"SUBJECT NARRATIVE: {input_data.user_message}")
             
-            report_context = f"""DIAGNOSTIC INVESTIGATION REPORT:
-            - Primary Diagnosis: {result['prediction']}
-            - Certainty: {result['certainty']}
-            - Evidence Signals: {', '.join(result.get('evidence_signals', ['None']))}
-            - Interpretive Modifiers: {', '.join(result.get('interpretive_modifiers', ['None']))}
-            - Competing Hypotheses: {', '.join(result.get('competing_hypotheses', ['None']))}
-            """
+            report_context = f"""DIAGNOSTIC REPORT SUMMARY (FOR AI CONTEXT ONLY):
+- Story Analysis: {result['prediction']}
+- Confidence Level: {result['certainty']}
+- Detected Evidence: {', '.join(result.get('evidence_signals', ['None']))}
+- Detected Contextual Modifiers: {', '.join(result.get('interpretive_modifiers', ['None']))}
+- Competing Theories: {', '.join(result.get('competing_hypotheses', ['None']))}
+
+INSTRUCTIONS: The user will now follow up. Reference the 'SUBJECT NARRATIVE' and this report to answer.
+"""
             session_store.append_message(session_id, "system", report_context)
             is_initial_analysis = True
         except Exception as e:

@@ -1,5 +1,5 @@
 /**
- * Paranormix - Diagnostic Suite Logic
+ * Paranormix - Diagnostic Suite Logic V2
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -19,7 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const message = userInput.value.trim();
         if (!message) return;
 
-        // Is this the first message of the investigation?
         const isInitial = !sessionId;
 
         userInput.value = '';
@@ -48,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
             appendMessage('ai', data.response);
         } catch (err) {
             console.error('Diagnostic error:', err);
-            appendMessage('ai', 'Error: System failed to generate diagnostic report.');
+            appendMessage('ai', 'SYSTEM_ERROR: Failed to establish diagnostic link.');
         } finally {
             setLoading(false);
         }
@@ -57,7 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- UI Rendering ---
 
     function renderDashboard(mlData) {
-        // Clear and show dashboard
         diagnosticDashboard.innerHTML = '';
         diagnosticDashboard.classList.remove('dashboard-hidden');
         
@@ -67,8 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Header
         report.getElementById('dashPrediction').textContent = mlData.prediction;
         const certainty = report.getElementById('dashCertainty');
-        certainty.textContent = `CERTAINTY: ${mlData.certainty}`;
-        certainty.className = `certainty-pill cert-${mlData.certainty.toLowerCase()}`;
+        certainty.textContent = mlData.certainty;
+        certainty.className = `cert-pill cert-${mlData.certainty.toLowerCase()}`;
 
         // 1. Class Score Bar Chart
         const scoreContainer = report.getElementById('chartClassScore');
@@ -76,8 +74,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = document.createElement('div');
             row.className = 'bar-row';
             row.innerHTML = `
-                <div class="bar-label">${cls}</div>
-                <div class="bar-outer"><div class="bar-inner" style="width: ${score * 100}%"></div></div>
+                <div class="bar-lbl">${cls.toUpperCase()}</div>
+                <div class="bar-out"><div class="bar-in" style="width: ${score * 100}%"></div></div>
             `;
             scoreContainer.appendChild(row);
         });
@@ -85,16 +83,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // 2. Certainty Drivers
         const driverContainer = report.getElementById('chartDrivers');
         const driverMap = {
-            "multi_class_overlap": "High Probability Overlap",
-            "modifier_presence": "Interpretive Bias Detected",
-            "signal_contradiction": "Conflicting Evidence Patterns"
+            "multi_class_overlap": "PROBABILITY_OVERLAP",
+            "modifier_presence": "BIAS_DETECTED",
+            "signal_contradiction": "SIGNAL_CONFLICT"
         };
         Object.entries(charts.certainty_drivers).forEach(([key, active]) => {
             const item = document.createElement('div');
-            item.className = `check-item ${active ? 'active' : ''}`;
+            item.className = `chk-row ${active ? 'active' : ''}`;
             item.innerHTML = `
-                <div class="check-box ${active ? 'checked' : ''}"></div>
-                <span>${driverMap[key] || key}</span>
+                <div class="chk-box ${active ? 'active' : ''}"></div>
+                <span>${driverMap[key] || key.toUpperCase()}</span>
             `;
             driverContainer.appendChild(item);
         });
@@ -104,13 +102,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const contribs = charts.signal_contributions || {}; 
         const total = Object.values(contribs).reduce((a, b) => a + b, 0) || 1;
         
+        const catMap = { "psychological": "psych", "sensory": "sensor", "physical": "phys" };
         Object.entries(contribs).forEach(([cat, val]) => {
             const p = (val / total) * 100;
             if (p > 0) {
                 const seg = document.createElement('div');
-                seg.className = `contrib-segment seg-${cat}`;
+                seg.className = `seg ${catMap[cat] || ''}`;
                 seg.style.width = `${p}%`;
-                seg.textContent = val > 0 ? cat[0].toUpperCase() : '';
                 seg.title = `${cat}: ${val} signals`;
                 contribChart.appendChild(seg);
             }
@@ -118,19 +116,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 4. Competing Margin
         const marginContainer = report.getElementById('chartMargins');
-        // Sort margins to show closest competitors
         const sortedMargins = Object.entries(charts.margins)
             .sort((a,b) => a[1] - b[1])
             .slice(0, 3);
 
         sortedMargins.forEach(([cls, gap]) => {
             const row = document.createElement('div');
-            row.className = 'margin-row';
-            // Gap of 0.1 becomes a 90% wide bar (inverted to show proximity)
+            row.className = 'bar-row'; 
             const gapWidth = Math.max(0, (1 - gap) * 100);
             row.innerHTML = `
-                <div class="margin-label">${cls}</div>
-                <div class="margin-bar-outer"><div class="margin-bar-inner" style="width: ${gapWidth}%"></div></div>
+                <div class="bar-lbl">${cls.slice(0, 10).toUpperCase()}</div>
+                <div class="bar-out"><div class="bar-in" style="width: ${gapWidth}%; opacity: 0.5;"></div></div>
             `;
             marginContainer.appendChild(row);
         });
@@ -139,24 +135,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const heatContainer = report.getElementById('chartHeatmap');
         const cm = charts.global_cm;
         
-        // Header labels
         heatContainer.appendChild(document.createElement('div')); // Empty corner
         cm.labels.forEach(l => {
             const cell = document.createElement('div');
-            cell.className = 'heat-cell heat-label';
-            cell.textContent = l.slice(0, 3);
+            cell.className = 'h-cell h-lbl';
+            cell.textContent = l.slice(0, 3).toUpperCase();
             heatContainer.appendChild(cell);
         });
 
         cm.matrix.forEach((row, i) => {
             const label = document.createElement('div');
-            label.className = 'heat-cell heat-label';
-            label.textContent = cm.labels[i].slice(0, 3);
+            label.className = 'h-cell h-lbl';
+            label.textContent = cm.labels[i].slice(0, 3).toUpperCase();
             heatContainer.appendChild(label);
 
             row.forEach(val => {
                 const cell = document.createElement('div');
-                cell.className = 'heat-cell';
+                cell.className = 'h-cell';
                 const opacity = Math.min(1, val/200);
                 cell.style.background = `rgba(56, 189, 248, ${opacity})`;
                 cell.textContent = val;
@@ -172,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
         div.className = `message ${role}`;
         
         // Format bold text
-        const formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        const formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
         div.innerHTML = formatted;
         
         chatContainer.appendChild(div);
@@ -185,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isLoading) {
             sendBtn.innerHTML = '<div class="loader"></div>';
         } else {
-            sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
+            sendBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
         }
     }
 
@@ -195,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
         diagnosticDashboard.innerHTML = '';
         diagnosticDashboard.classList.add('dashboard-hidden');
         userInput.value = '';
-        appendMessage('ai', 'Diagnostic Terminal active. Submit narrative for multi-axial analysis.');
+        appendMessage('ai', 'INVESTIGATION_TERMINATED. Terminal ready for new signal input.');
     }
 
     // --- Listeners ---
@@ -209,5 +204,5 @@ document.addEventListener('DOMContentLoaded', () => {
     resetBtn.addEventListener('click', resetInvestigation);
 
     // Welcome message
-    appendMessage('ai', 'Diagnostic Terminal active. Submit narrative for multi-axial analysis.');
+    appendMessage('ai', 'DIAGNOSTIC_TERMINAL_V2.1 active. Submit narrative for multi-axial analysis.');
 });
