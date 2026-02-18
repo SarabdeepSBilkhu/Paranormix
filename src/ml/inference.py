@@ -119,17 +119,7 @@ class ParanormalInvestigator:
                 "class_scores": normalized_scores,
                 "signal_contributions": category_weights,
                 "margins": margins,
-                "certainty_drivers": drivers,
-                "global_cm": {
-                    "labels": ["Apparition", "Creature", "Folklore", "Poltergeist", "Psychological"],
-                    "matrix": [
-                        [76, 163, 1, 12, 138],
-                        [2, 266, 1, 8, 85],
-                        [7, 99, 8, 3, 80],
-                        [9, 175, 1, 104, 125],
-                        [4, 88, 0, 9, 274]
-                    ]
-                }
+                "certainty_drivers": drivers
             }
         }
     

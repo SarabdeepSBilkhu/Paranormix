@@ -103,35 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
 
-
-        // 5. Global Heatmap
-        const heatContainer = report.getElementById('chartHeatmap');
-        const cm = charts.global_cm;
-        
-        heatContainer.appendChild(document.createElement('div')); // Empty corner
-        cm.labels.forEach(l => {
-            const cell = document.createElement('div');
-            cell.className = 'h-cell h-lbl';
-            cell.textContent = l.slice(0, 3).toUpperCase();
-            heatContainer.appendChild(cell);
-        });
-
-        cm.matrix.forEach((row, i) => {
-            const label = document.createElement('div');
-            label.className = 'h-cell h-lbl';
-            label.textContent = cm.labels[i].slice(0, 3).toUpperCase();
-            heatContainer.appendChild(label);
-
-            row.forEach(val => {
-                const cell = document.createElement('div');
-                cell.className = 'h-cell';
-                const opacity = Math.min(1, val/200);
-                cell.style.background = `rgba(56, 189, 248, ${opacity})`;
-                cell.textContent = val;
-                heatContainer.appendChild(cell);
-            });
-        });
-
         diagnosticDashboard.appendChild(report);
     }
 
