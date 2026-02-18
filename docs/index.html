@@ -1,82 +1,99 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Paranormix - AI Investigator</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Paranormix | Diagnostic Terminal</title>
+    <link rel="stylesheet" href="style.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Paranormix</h1>
-            <p class="subtitle">AI-Powered Paranormal Narrative Investigation</p>
+    <div class="app-shell">
+        <header class="main-header">
+            <div class="brand">
+                <span class="logo-text">PARANORMIX</span>
+                <span class="status-pill">V2.1_STABLE</span>
+            </div>
+            <div class="header-controls">
+                <button id="resetBtn" class="reset-link">Terminate Investigation</button>
+            </div>
         </header>
 
-        <main class="chat-container">
-            <!-- Central Chat Panel -->
-            <section class="chat-panel" id="chatPanel">
-                <div class="chat-header">
-                    <div class="bot-info">
-                        <div class="bot-avatar">P</div>
-                        <div class="bot-status">
-                            <span class="bot-name">Paranormix (AI Investigator)</span>
-                            <span class="status-indicator">Online</span>
-                        </div>
-                    </div>
-                    <button id="resetBtn" class="reset-btn">Reset Case</button>
+        <main class="main-layout">
+            <!-- Left Panel: Diagnostic Dashboard (Populates on first run) -->
+            <section id="diagnosticDashboard" class="dashboard-hidden">
+                <!-- Injected via app.js -->
+            </section>
+
+            <!-- Right Panel: Conversation Terminal -->
+            <section class="terminal-panel">
+                <div id="chatContainer" class="terminal-output">
+                    <!-- Messages appear here -->
                 </div>
-                
-                <div id="chatMessages" class="chat-messages">
-                    <div class="chat-message ai">
-                        <div class="message-bubble ai">Welcome. I am Paranormix, your autonomous paranormal narrative investigator. 
-Please share a narrative of supernatural events, and I will perform a machine learning analysis to classify the phenomena.</div>
+
+                <div class="terminal-input-group">
+                    <div class="input-wrapper">
+                        <textarea id="userInput" placeholder="Submit narrative for multi-axial analysis..." rows="1"></textarea>
+                        <button id="sendBtn" class="primary-action">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                            </svg>
+                        </button>
                     </div>
                 </div>
 
-                <div id="suggestedQuestions" class="suggested-questions" style="display:none;">
-                    <p class="suggested-label">Suggested follow-ups:</p>
-                    <div id="suggestedButtons"></div>
-                </div>
-                
-                <div class="chat-input-area">
-                    <textarea 
-                        id="chatInput" 
-                        placeholder="Paste a narrative (at least 50 characters) or ask a question..."
-                        rows="1"
-                    ></textarea>
-                    <button id="chatSendBtn" disabled>
-                        <svg viewBox="0 0 24 24" width="24" height="24">
-                            <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
-                        </svg>
-                    </button>
-                </div>
-                
-                <div class="chat-footer">
-                    <span id="turnCounter">Investigation depth: 0/5</span>
-                    <span class="disclaimer">Powered by Llama 3 & Scikit-Learn</span>
-                </div>
+                <footer class="terminal-footer">
+                    <div class="footer-meta">
+                        <span class="meta-item">Powered by Groq-Llama3</span>
+                        <span class="meta-item">Logic: Scikit-Learn Ensemble</span>
+                    </div>
+                </footer>
             </section>
         </main>
     </div>
 
-    <!-- Results Template (Hidden, used by JS to inject analysis into bubbles) -->
-    <template id="reportTemplate">
-        <div class="investigation-report">
-            <div class="report-header">INVESTIGATION REPORT</div>
-            <div class="report-main">
-                <div class="report-field">
-                    <span class="field-label">Primary Entity:</span>
-                    <span class="field-value highlight" id="reportPrediction"></span>
+    <!-- Dashboard Template -->
+    <template id="dashboardTemplate">
+        <div class="report-container">
+            <div class="report-top">
+                <div class="prediction-block">
+                    <span class="label-mono">PRIMARY_DIAGNOSIS</span>
+                    <h1 id="dashPrediction">NARRATIVE_UNDETERMINED</h1>
                 </div>
-                <div class="report-field">
-                    <span class="field-label">Confidence:</span>
-                    <span class="field-value" id="reportConfidence"></span>
+                <div class="certainty-block">
+                    <div id="dashCertainty" class="cert-pill">MEASURING_STABILITY...</div>
                 </div>
-                <div class="report-signals">
-                    <span class="field-label">Detected Signals:</span>
-                    <div class="signal-tags" id="reportSignals"></div>
+            </div>
+
+            <div class="report-body">
+                <div class="report-card">
+                    <h3 class="card-title">Class Distribution</h3>
+                    <div class="chart-box" id="chartClassScore"></div>
+                </div>
+
+                <div class="report-card">
+                    <h3 class="card-title">Categorical Drivers</h3>
+                    <div class="check-box-group" id="chartDrivers"></div>
+                </div>
+
+                <div class="report-card">
+                    <h3 class="card-title">Signal Contribution</h3>
+                    <div class="stacked-bar" id="chartContribution"></div>
+                    <div class="legend-group">
+                        <span class="legend-item"><i class="sq psych"></i> Cognitive / Information</span>
+                        <span class="legend-item"><i class="sq visual"></i> Visual / Optical</span>
+                        <span class="legend-item"><i class="sq phys"></i> Kinetic / Physical</span>
+                    </div>
+                </div>
+
+                <div class="report-card">
+                    <h3 class="card-title">Classification Margin</h3>
+                    <div class="margin-list" id="chartMargins"></div>
+                </div>
+
+                <div class="report-card full-span">
+                    <h3 class="card-title">Global Validation Heatmap (ML Overlap)</h3>
+                    <div class="heatmap" id="chartHeatmap"></div>
                 </div>
             </div>
         </div>

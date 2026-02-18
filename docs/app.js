@@ -1,67 +1,33 @@
 /**
- * Paranormix - Pure Chatbot Application Logic
+ * Paranormix - Diagnostic Suite Logic V2
  */
 
 document.addEventListener('DOMContentLoaded', () => {
     // Elements
-    const chatMessages = document.getElementById('chatMessages');
-    const chatInput = document.getElementById('chatInput');
-    const sendBtn = document.getElementById('chatSendBtn');
+    const chatContainer = document.getElementById('chatContainer');
+    const diagnosticDashboard = document.getElementById('diagnosticDashboard');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
     const resetBtn = document.getElementById('resetBtn');
-    const turnCounter = document.getElementById('turnCounter');
-    const suggestedQuestions = document.getElementById('suggestedQuestions');
-    const suggestedButtons = document.getElementById('suggestedButtons');
-    const reportTemplate = document.getElementById('reportTemplate');
+    const dashboardTemplate = document.getElementById('dashboardTemplate');
 
-    // State
     let sessionId = null;
-    let turnCount = 0;
-    let isProcessing = false;
 
-    // Auto-resize textarea
-    chatInput.addEventListener('input', () => {
-        chatInput.style.height = 'auto';
-        chatInput.style.height = (chatInput.scrollHeight) + 'px';
-        sendBtn.disabled = chatInput.value.trim().length === 0 || isProcessing;
-    });
+    // --- Core Logic ---
 
-    // Send on Enter (but allow Shift+Enter for new lines)
-    chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    });
+    async function sendMessage() {
+        const message = userInput.value.trim();
+        if (!message) return;
 
-    sendBtn.addEventListener('click', sendMessage);
-    resetBtn.addEventListener('click', resetInvestigation);
-    // Live Deployment Configuration
-    const API_BASE_URL = "https://paranormix-production.up.railway.app";
+        const isInitial = !sessionId;
 
-    async function sendMessage(text = null) {
-        // Ensure we handle the case where 'text' is a DOM Event (from event listeners)
-        const message = (typeof text === 'string') ? text : chatInput.value.trim();
-        
-        if (!message || isProcessing) return;
-
-        const apiUrl = `${API_BASE_URL}/chat`;
-
-        // Clear input
-        if (!text) {
-            chatInput.value = '';
-            chatInput.style.height = 'auto';
-            sendBtn.disabled = true;
-        }
-
-        // Add user message to UI
+        userInput.value = '';
         appendMessage('user', message);
-        
-        // Show loading
-        isProcessing = true;
-        const loadingDiv = appendMessage('ai', 'Investigating...', true);
-        
+
+        setLoading(true);
+
         try {
-            const response = await fetch(apiUrl, {
+            const response = await fetch('/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -70,120 +36,189 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
-            const data = await response.json();
-
             if (!response.ok) {
-                const errorDetail = typeof data.detail === 'object' ? JSON.stringify(data.detail) : data.detail;
-                throw new Error(errorDetail || 'The spirits are silent.');
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.detail || `Server Error: ${response.status}`);
             }
 
-            // Update State
-            sessionId = data.session_id;
-            turnCount = data.turn_count;
-            updateUI(data);
+            const data = await response.json();
+            
+            if (data.session_id) sessionId = data.session_id;
 
-            // Replace loading with actual response
-            loadingDiv.remove();
-            appendMessage('ai', data.response, false, data.ml_data);
+            if (isInitial && data.ml_data) {
+                renderDashboard(data.ml_data);
+            }
 
-        } catch (error) {
-            loadingDiv.textContent = `Error: ${error.message}`;
-            loadingDiv.classList.add('error-bubble');
-            console.error('Chat error:', error);
+            appendMessage('ai', data.response || "NO_RESPONSE_RECEIVED");
+        } catch (err) {
+            console.error('Diagnostic error:', err);
+            appendMessage('ai', `SYSTEM_ERROR: ${err.message || 'Failed to establish diagnostic link.'}`);
         } finally {
-            isProcessing = false;
+            setLoading(false);
         }
     }
 
-    function appendMessage(role, text, isLoading = false, mlData = null) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `chat-message ${role}`;
-        
-        const bubble = document.createElement('div');
-        bubble.className = `message-bubble ${role}`;
-        
-        // Simple Markdown-style replacement for bold text
-        if (!isLoading) {
-            const formattedText = text
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\n/g, '<br>');
-            bubble.innerHTML = formattedText;
-        } else {
-            bubble.textContent = text;
-        }
-        
-        messageDiv.appendChild(bubble);
+    // --- UI Rendering ---
 
-        // If it's the initial report, inject the ML data report
-        if (mlData) {
-            const report = reportTemplate.content.cloneNode(true);
-            report.getElementById('reportPrediction').textContent = mlData.prediction;
-            report.getElementById('reportConfidence').textContent = `${(mlData.confidence * 100).toFixed(1)}%`;
-            
-            const signalsContainer = report.getElementById('reportSignals');
-            const signals = mlData.signals || [];
-            if (signals.length > 0) {
-                signals.forEach(s => {
-                    const span = document.createElement('span');
-                    span.className = 'signal-tag';
-                    span.textContent = s;
-                    signalsContainer.appendChild(span);
-                });
-            } else {
-                signalsContainer.textContent = 'Standard markers detected.';
+    function renderDashboard(mlData) {
+        diagnosticDashboard.innerHTML = '';
+        diagnosticDashboard.classList.remove('dashboard-hidden');
+        
+        const report = dashboardTemplate.content.cloneNode(true);
+        const charts = mlData.chart_data;
+
+        // Header
+        report.getElementById('dashPrediction').textContent = mlData.prediction;
+        const certainty = report.getElementById('dashCertainty');
+        certainty.textContent = mlData.certainty;
+        certainty.className = `cert-pill cert-${mlData.certainty.toLowerCase()}`;
+
+        // 1. Class Score Bar Chart
+        const scoreContainer = report.getElementById('chartClassScore');
+        Object.entries(charts.class_scores).forEach(([cls, score]) => {
+            const row = document.createElement('div');
+            row.className = 'bar-row';
+            row.innerHTML = `
+                <div class="bar-lbl">${cls.toUpperCase()}</div>
+                <div class="bar-out"><div class="bar-in" style="width: ${score * 100}%"></div></div>
+            `;
+            scoreContainer.appendChild(row);
+        });
+
+        // 2. Certainty Drivers
+        const driverContainer = report.getElementById('chartDrivers');
+        const driverMap = {
+            "multi_class_overlap": "PROBABILITY_OVERLAP",
+            "resolution_boundary": "RESOLUTION_BOUNDARY",
+            "signal_conflict": "SIGNAL_CONFLICT"
+        };
+        Object.entries(charts.certainty_drivers).forEach(([key, active]) => {
+            const item = document.createElement('div');
+            item.className = `chk-row ${active ? 'active' : ''}`;
+            item.innerHTML = `
+                <div class="chk-box ${active ? 'active' : ''}"></div>
+                <span>${driverMap[key] || key.toUpperCase()}</span>
+            `;
+            driverContainer.appendChild(item);
+        });
+
+        // 3. Signal Contribution (Stacked Bar)
+        const contribChart = report.getElementById('chartContribution');
+        const contribs = charts.signal_contributions || {}; 
+        const total = Object.values(contribs).reduce((a, b) => a + b, 0) || 1;
+        
+        const catMap = { 
+            "Pattern_A": { label: "Kinetic / Physical", class: "phys" }, 
+            "Pattern_B": { label: "Sensory / Temp", class: "sensor" }, 
+            "Pattern_C": { label: "Cognitive / Information", class: "psych" }, 
+            "Pattern_D": { label: "Visual / Optical", class: "visual" } 
+        };
+        Object.entries(contribs).forEach(([cat, val]) => {
+            const p = (val / total) * 100;
+            const config = catMap[cat] || { label: cat, class: "phys" };
+            if (p > 0) {
+                const seg = document.createElement('div');
+                seg.className = `seg ${config.class}`;
+                seg.style.width = `${p}%`;
+                seg.title = `${config.label}: ${val} signals`;
+                contribChart.appendChild(seg);
             }
+        });
 
-            messageDiv.appendChild(report);
-        }
+        // 4. Competing Margin
+        const marginContainer = report.getElementById('chartMargins');
+        const sortedMargins = Object.entries(charts.margins)
+            .sort((a,b) => a[1] - b[1])
+            .slice(0, 3);
 
-        chatMessages.appendChild(messageDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-        return bubble;
+        sortedMargins.forEach(([cls, gap]) => {
+            const row = document.createElement('div');
+            row.className = 'bar-row'; 
+            const gapWidth = Math.max(0, (1 - gap) * 100);
+            row.innerHTML = `
+                <div class="bar-lbl">${cls.toUpperCase()}</div>
+                <div class="bar-out"><div class="bar-in" style="width: ${gapWidth}%; opacity: 0.5;"></div></div>
+            `;
+            marginContainer.appendChild(row);
+        });
+
+        // 5. Global Heatmap
+        const heatContainer = report.getElementById('chartHeatmap');
+        const cm = charts.global_cm;
+        
+        heatContainer.appendChild(document.createElement('div')); // Empty corner
+        cm.labels.forEach(l => {
+            const cell = document.createElement('div');
+            cell.className = 'h-cell h-lbl';
+            cell.textContent = l.slice(0, 3).toUpperCase();
+            heatContainer.appendChild(cell);
+        });
+
+        cm.matrix.forEach((row, i) => {
+            const label = document.createElement('div');
+            label.className = 'h-cell h-lbl';
+            label.textContent = cm.labels[i].slice(0, 3).toUpperCase();
+            heatContainer.appendChild(label);
+
+            row.forEach(val => {
+                const cell = document.createElement('div');
+                cell.className = 'h-cell';
+                const opacity = Math.min(1, val/200);
+                cell.style.background = `rgba(56, 189, 248, ${opacity})`;
+                cell.textContent = val;
+                heatContainer.appendChild(cell);
+            });
+        });
+
+        diagnosticDashboard.appendChild(report);
     }
 
-    function updateUI(data) {
-        turnCounter.textContent = `Investigation depth: ${data.turn_count}/5`;
+    function appendMessage(role, text) {
+        const div = document.createElement('div');
+        div.className = `message ${role}`;
         
-        // Handle suggestions
-        if (data.is_initial && data.ml_data) {
-            suggestedQuestions.style.display = 'block';
-            suggestedButtons.innerHTML = '';
-            
-            const p = data.ml_data.prediction;
-            const suggestions = [
-                `Why was this classified as ${p}?`,
-                `What signals led to this result?`,
-                `How certain is the classification?`
-            ];
+        // Safety check for undefined/null text
+        const safeText = String(text || "");
+        
+        // Format bold text
+        const formatted = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+        div.innerHTML = formatted;
+        
+        chatContainer.appendChild(div);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
 
-            suggestions.forEach(q => {
-                const btn = document.createElement('button');
-                btn.className = 'suggested-btn';
-                btn.textContent = q;
-                btn.onclick = () => {
-                    sendMessage(q);
-                    suggestedQuestions.style.display = 'none';
-                };
-                suggestedButtons.appendChild(btn);
-            });
+    function setLoading(isLoading) {
+        sendBtn.disabled = isLoading;
+        userInput.disabled = isLoading;
+        if (isLoading) {
+            sendBtn.innerHTML = '<div class="loader"></div>';
         } else {
-            suggestedQuestions.style.display = 'none';
+            sendBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
         }
     }
 
     function resetInvestigation() {
         sessionId = null;
-        turnCount = 0;
-        chatMessages.innerHTML = '';
-        turnCounter.textContent = 'Investigation depth: 0/5';
-        suggestedQuestions.style.display = 'none';
-        
-        // Initial Local Welcome
-        const welcomeText = "Welcome. I am Paranormix, your autonomous paranormal narrative investigator. Please share a narrative of supernatural events, and I will perform a machine learning analysis to classify the phenomena.";
-        appendMessage('ai', welcomeText);
-        
-        chatInput.value = '';
-        chatInput.style.height = 'auto';
-        chatInput.focus();
+        chatContainer.innerHTML = '';
+        diagnosticDashboard.innerHTML = '';
+        diagnosticDashboard.classList.add('dashboard-hidden');
+        userInput.value = '';
+        appendMessage('ai', 'INVESTIGATION_TERMINATED. Terminal ready for new signal input.');
     }
+
+    // --- Listeners ---
+    sendBtn.addEventListener('click', sendMessage);
+    userInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    resetBtn.addEventListener('click', resetInvestigation);
+
+    appendMessage(
+        "ai",
+        "Hello! I'm here to help you analyze your narrative. When you're ready, paste your story below and I'll begin the investigation."
+    );
 });

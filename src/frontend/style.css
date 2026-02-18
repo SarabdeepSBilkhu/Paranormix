@@ -204,8 +204,9 @@ body {
 
 /* Pattern Mapping */
 .Pattern_C, .psych { background: var(--c-psych); }
-.Pattern_D, .sensor { background: var(--c-sens); }
+.Pattern_D, .visual { background: var(--c-sens); }
 .Pattern_A, .phys { background: var(--c-phys); }
+.Pattern_B, .sensor { background: var(--c-sens); }
 
 .legend-group { display: flex; gap: 15px; }
 .legend-item { font-size: 0.7rem; color: var(--text-dim); display: flex; align-items: center; gap: 5px; }

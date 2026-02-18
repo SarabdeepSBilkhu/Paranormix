@@ -108,18 +108,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const total = Object.values(contribs).reduce((a, b) => a + b, 0) || 1;
         
         const catMap = { 
-            "Pattern_A": "Kinetic / Physical", 
-            "Pattern_B": "Sensory / Temp", 
-            "Pattern_C": "Cognitive / Information", 
-            "Pattern_D": "Visual / Optical" 
+            "Pattern_A": { label: "Kinetic / Physical", class: "phys" }, 
+            "Pattern_B": { label: "Sensory / Temp", class: "sensor" }, 
+            "Pattern_C": { label: "Cognitive / Information", class: "psych" }, 
+            "Pattern_D": { label: "Visual / Optical", class: "visual" } 
         };
         Object.entries(contribs).forEach(([cat, val]) => {
             const p = (val / total) * 100;
+            const config = catMap[cat] || { label: cat, class: "phys" };
             if (p > 0) {
                 const seg = document.createElement('div');
-                seg.className = `seg ${catMap[cat] || 'phys'}`;
+                seg.className = `seg ${config.class}`;
                 seg.style.width = `${p}%`;
-                seg.title = `${cat}: ${val} signals`;
+                seg.title = `${config.label}: ${val} signals`;
                 contribChart.appendChild(seg);
             }
         });
