@@ -101,7 +101,8 @@ async def chat(input_data: ChatInput):
                 certainty=result["certainty"],
                 evidence=result["evidence_signals"],
                 modifiers=result["interpretive_modifiers"],
-                competing=result["competing_hypotheses"]
+                competing=result["competing_hypotheses"],
+                chart_data=result["chart_data"]
             )
             
             # Initialize history with the story and hidden diagnostic report
@@ -145,11 +146,12 @@ async def chat(input_data: ChatInput):
     llm_messages.extend(session_store.get_history(session_id))
 
     try:
+        # Lower temperature for diagnostic reliability
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=llm_messages,
             max_tokens=400,
-            temperature=0.1 # Keep it deterministic
+            temperature=0.1
         )
         
         bot_response = response.choices[0].message.content
@@ -165,7 +167,8 @@ async def chat(input_data: ChatInput):
                 "certainty": session['certainty'],
                 "evidence": session['evidence'],
                 "modifiers": session['modifiers'],
-                "competing": session['competing']
+                "competing": session['competing'],
+                "chart_data": session['chart_data']
             } if is_initial_analysis else None
         }
     except Exception as e:

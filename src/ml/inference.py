@@ -26,11 +26,13 @@ class ParanormalInvestigator:
                 "certainty": "Low",
                 "evidence_signals": [],
                 "interpretive_modifiers": ["Model missing from deployment"],
-                "competing_hypotheses": []
+                "competing_hypotheses": [],
+                "chart_data": {}
             }
         
-        # 1. Extract Signals (Evidence vs Modifiers)
+        # 1. Extract Signals & Categorized Weights
         signals = self._extract_diagnostic_signals(text)
+        category_weights = self._calculate_category_weights(text)
         
         # 2. Get Model Probabilities for Hypothesis Ranking
         try:
@@ -40,6 +42,7 @@ class ParanormalInvestigator:
             
             # Rank all hypotheses by probability
             ranked_hypotheses = sorted(prob_dict.items(), key=lambda x: x[1], reverse=True)
+            winner = ranked_hypotheses[0][0]
             
             # Derive Categorical Certainty from dominance gap
             primary_prob = ranked_hypotheses[0][1]
@@ -53,32 +56,78 @@ class ParanormalInvestigator:
             else:
                 certainty = "Low"
 
-            # 3. Apply Decision Hierarchy (Override model if hierarchy signal is present)
-            # Hierarchy: Psychological > Physical (Polter) > Visual (Appar) > Cultural (Folk)
-            prediction = ranked_hypotheses[0][0]
-            
+            # 3. Apply Decision Hierarchy Override
+            prediction = winner
             if "psychological indicators" in signals["evidence"]:
                 prediction = "psychological"
                 certainty = "High" if len(signals["evidence"]) == 1 else "Medium"
             elif "physical disturbance" in signals["evidence"] and prediction not in ["psychological", "poltergeist"]:
                 prediction = "poltergeist"
-            elif "visual apparition" in signals["evidence"] and prediction not in ["psychological", "poltergeist", "apparition"]:
-                prediction = "apparition"
+
+            # 4. Prepare Chart Data
+            # Normalizing prob_dict for Class Score Bar Chart
+            max_val = max(prob_dict.values()) if prob_dict else 1
+            normalized_scores = {k: v/max_val for k, v in prob_dict.items()}
+
+            # Competing Margin
+            margins = {k: primary_prob - v for k, v in prob_dict.items() if k != winner}
+
+            # Certainty Drivers
+            drivers = {
+                "multi_class_overlap": gap < 0.2,
+                "modifier_presence": len(signals["modifiers"]) > 0,
+                "signal_contradiction": len(signals["evidence"]) > 2 and gap < 0.25
+            }
 
         except Exception as e:
             print(f"ERROR in diagnostic analysis: {e}")
             prediction = "unknown"
             certainty = "Low"
             ranked_hypotheses = []
+            normalized_scores = {}
+            margins = {}
+            drivers = {}
 
         return {
             "prediction": prediction,
             "certainty": certainty,
             "evidence_signals": signals["evidence"],
             "interpretive_modifiers": signals["modifiers"],
-            "competing_hypotheses": [h[0] for h in ranked_hypotheses if h[0] != prediction][:2]
+            "competing_hypotheses": [h[0] for h in ranked_hypotheses if h[0] != prediction][:3],
+            "chart_data": {
+                "class_scores": normalized_scores,
+                "signal_contributions": category_weights.get(prediction, category_weights.get(winner, {})),
+                "margins": margins,
+                "certainty_drivers": drivers,
+                "global_cm": {
+                    "labels": ["Apparition", "Creature", "Folklore", "Poltergeist", "Psychological"],
+                    "matrix": [
+                        [76, 163, 1, 12, 138],
+                        [2, 266, 1, 8, 85],
+                        [7, 99, 8, 3, 80],
+                        [9, 175, 1, 104, 125],
+                        [4, 88, 0, 9, 274]
+                    ]
+                }
+            }
         }
     
+    def _calculate_category_weights(self, text):
+        """Calculate weight contributions per category for the winner"""
+        text_lower = text.lower()
+        cats = {
+            "psychological": ["voice", "insane", "hallucination", "mind", "remember", "dream"],
+            "sensory": ["cold", "smell", "touch", "chill", "freeze"],
+            "physical": ["thrown", "crash", "bang", "slam", "moved", "rattle"]
+        }
+        
+        # Generic weight calculation for any class
+        weights = {}
+        for cat, keywords in cats.items():
+            weights[cat] = sum(1 for k in keywords if k in text_lower)
+            
+        return {"current": weights} # Simplified for display
+
     def _extract_diagnostic_signals(self, text):
         """Rigidly separate hard evidence from interpretive bias"""
         text_lower = text.lower()

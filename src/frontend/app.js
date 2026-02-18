@@ -1,70 +1,34 @@
 /**
- * Paranormix - Pure Chatbot Application Logic
+ * Paranormix - Diagnostic Suite Logic
  */
 
 document.addEventListener('DOMContentLoaded', () => {
     // Elements
-    const chatMessages = document.getElementById('chatMessages');
-    const chatInput = document.getElementById('chatInput');
-    const sendBtn = document.getElementById('chatSendBtn');
+    const chatContainer = document.getElementById('chatContainer');
+    const diagnosticDashboard = document.getElementById('diagnosticDashboard');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
     const resetBtn = document.getElementById('resetBtn');
-    const turnCounter = document.getElementById('turnCounter');
-    const suggestedQuestions = document.getElementById('suggestedQuestions');
-    const suggestedButtons = document.getElementById('suggestedButtons');
-    const reportTemplate = document.getElementById('reportTemplate');
+    const dashboardTemplate = document.getElementById('dashboardTemplate');
 
-    // State
     let sessionId = null;
-    let turnCount = 0;
-    let isProcessing = false;
 
-    // Auto-resize textarea
-    chatInput.addEventListener('input', () => {
-        chatInput.style.height = 'auto';
-        chatInput.style.height = (chatInput.scrollHeight) + 'px';
-        sendBtn.disabled = chatInput.value.trim().length === 0 || isProcessing;
-    });
+    // --- Core Logic ---
 
-    // Send on Enter (but allow Shift+Enter for new lines)
-    chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    });
+    async function sendMessage() {
+        const message = userInput.value.trim();
+        if (!message) return;
 
-    sendBtn.addEventListener('click', sendMessage);
-    resetBtn.addEventListener('click', resetInvestigation);
+        // Is this the first message of the investigation?
+        const isInitial = !sessionId;
 
-    // Live Deployment Configuration
-    // In a unified full-stack deployment (Railway), the frontend is served from the same origin.
-    // Use an empty string for relative paths, which is the architectural best practice.
-    const API_BASE_URL = "";
-
-    async function sendMessage(text = null) {
-        // Ensure we handle the case where 'text' is a DOM Event (from event listeners)
-        const message = (typeof text === 'string') ? text : chatInput.value.trim();
-        
-        if (!message || isProcessing) return;
-
-        const apiUrl = `${API_BASE_URL}/chat`;
-
-        // Clear input
-        if (!text) {
-            chatInput.value = '';
-            chatInput.style.height = 'auto';
-            sendBtn.disabled = true;
-        }
-
-        // Add user message to UI
+        userInput.value = '';
         appendMessage('user', message);
-        
-        // Show loading
-        isProcessing = true;
-        const loadingDiv = appendMessage('ai', 'Investigating...', true);
-        
+
+        setLoading(true);
+
         try {
-            const response = await fetch(apiUrl, {
+            const response = await fetch('/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -74,163 +38,176 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const data = await response.json();
+            
+            if (data.session_id) sessionId = data.session_id;
 
-            if (!response.ok) {
-                const errorDetail = typeof data.detail === 'object' ? JSON.stringify(data.detail) : data.detail;
-                throw new Error(errorDetail || 'The spirits are silent.');
+            if (isInitial && data.ml_data) {
+                renderDashboard(data.ml_data);
             }
 
-            // Update State
-            sessionId = data.session_id;
-            turnCount = data.turn_count;
-            updateUI(data);
-
-            // Replace loading with actual response
-            loadingDiv.remove();
-            appendMessage('ai', data.response, false, data.ml_data);
-
-        } catch (error) {
-            loadingDiv.textContent = `Error: ${error.message}`;
-            loadingDiv.classList.add('error-bubble');
-            console.error('Chat error:', error);
+            appendMessage('ai', data.response);
+        } catch (err) {
+            console.error('Diagnostic error:', err);
+            appendMessage('ai', 'Error: System failed to generate diagnostic report.');
         } finally {
-            isProcessing = false;
+            setLoading(false);
         }
     }
 
-    function appendMessage(role, text, isLoading = false, mlData = null) {
-        // Remove welcome message on first user message if it's there
-        if (role === 'user' && chatMessages.children.length === 1 && chatMessages.children[0].textContent.includes("Welcome")) {
-            chatMessages.children[0].remove();
-        }
+    // --- UI Rendering ---
 
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `chat-message ${role}`;
+    function renderDashboard(mlData) {
+        // Clear and show dashboard
+        diagnosticDashboard.innerHTML = '';
+        diagnosticDashboard.classList.remove('dashboard-hidden');
         
-        const bubble = document.createElement('div');
-        bubble.className = `message-bubble ${role}`;
-        
-        // Simple Markdown-style replacement for bold text
-        if (!isLoading) {
-            const formattedText = text
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\n/g, '<br>');
-            bubble.innerHTML = formattedText;
-        } else {
-            bubble.textContent = text;
-        }
-        
-        messageDiv.appendChild(bubble);
+        const report = dashboardTemplate.content.cloneNode(true);
+        const charts = mlData.chart_data;
 
-        // If it's the initial report, inject the ML data report
-        if (mlData) {
-            const report = reportTemplate.content.cloneNode(true);
-            const pred = mlData.prediction.toLowerCase().split(' ')[0];
-            
-            const badge = report.getElementById('reportBadge');
-            badge.textContent = mlData.prediction;
-            badge.classList.add(`badge-${pred}`);
-            
-            report.getElementById('reportPrediction').textContent = `Dominant Diagnosis: ${mlData.prediction}`;
-            
-            // Certainty
-            const certainty = report.getElementById('reportCertainty');
-            certainty.textContent = mlData.certainty;
-            certainty.classList.add(`certainty-${mlData.certainty.toLowerCase()}`);
-            
-            // Signals (Evidence)
-            const evidenceContainer = report.getElementById('reportEvidence');
-            const evidence = mlData.evidence || [];
-            if (evidence.length > 0) {
-                evidence.forEach(s => {
-                    const span = document.createElement('span');
-                    span.className = 'signal-tag evidence-tag';
-                    span.textContent = s;
-                    evidenceContainer.appendChild(span);
-                });
-            } else {
-                evidenceContainer.innerHTML = '<span class="none">None Detected</span>';
+        // Header
+        report.getElementById('dashPrediction').textContent = mlData.prediction;
+        const certainty = report.getElementById('dashCertainty');
+        certainty.textContent = `CERTAINTY: ${mlData.certainty}`;
+        certainty.className = `certainty-pill cert-${mlData.certainty.toLowerCase()}`;
+
+        // 1. Class Score Bar Chart
+        const scoreContainer = report.getElementById('chartClassScore');
+        Object.entries(charts.class_scores).forEach(([cls, score]) => {
+            const row = document.createElement('div');
+            row.className = 'bar-row';
+            row.innerHTML = `
+                <div class="bar-label">${cls}</div>
+                <div class="bar-outer"><div class="bar-inner" style="width: ${score * 100}%"></div></div>
+            `;
+            scoreContainer.appendChild(row);
+        });
+
+        // 2. Certainty Drivers
+        const driverContainer = report.getElementById('chartDrivers');
+        const driverMap = {
+            "multi_class_overlap": "High Probability Overlap",
+            "modifier_presence": "Interpretive Bias Detected",
+            "signal_contradiction": "Conflicting Evidence Patterns"
+        };
+        Object.entries(charts.certainty_drivers).forEach(([key, active]) => {
+            const item = document.createElement('div');
+            item.className = `check-item ${active ? 'active' : ''}`;
+            item.innerHTML = `
+                <div class="check-box ${active ? 'checked' : ''}"></div>
+                <span>${driverMap[key] || key}</span>
+            `;
+            driverContainer.appendChild(item);
+        });
+
+        // 3. Signal Contribution (Stacked Bar)
+        const contribChart = report.getElementById('chartContribution');
+        const contribs = charts.signal_contributions.current; 
+        const total = Object.values(contribs).reduce((a, b) => a + b, 0) || 1;
+        
+        Object.entries(contribs).forEach(([cat, val]) => {
+            const p = (val / total) * 100;
+            if (p > 0) {
+                const seg = document.createElement('div');
+                seg.className = `contrib-segment seg-${cat}`;
+                seg.style.width = `${p}%`;
+                seg.textContent = val > 0 ? cat[0].toUpperCase() : '';
+                seg.title = `${cat}: ${val} signals`;
+                contribChart.appendChild(seg);
             }
+        });
 
-            // Modifiers
-            const modifiersContainer = report.getElementById('reportModifiers');
-            const modifiers = mlData.modifiers || [];
-            if (modifiers.length > 0) {
-                modifiers.forEach(s => {
-                    const span = document.createElement('span');
-                    span.className = 'signal-tag modifier-tag';
-                    span.textContent = s;
-                    modifiersContainer.appendChild(span);
-                });
-            } else {
-                modifiersContainer.innerHTML = '<span class="none">None Detected</span>';
-            }
+        // 4. Competing Margin
+        const marginContainer = report.getElementById('chartMargins');
+        // Sort margins to show closest competitors
+        const sortedMargins = Object.entries(charts.margins)
+            .sort((a,b) => a[1] - b[1])
+            .slice(0, 3);
 
-            // Competing Hypotheses
-            const competing = report.getElementById('reportCompeting');
-            const hyps = mlData.competing || [];
-            if (hyps.length > 0) {
-                hyps.forEach(h => {
-                    const div = document.createElement('div');
-                    div.className = 'hypothesis-item';
-                    div.textContent = h;
-                    competing.appendChild(div);
-                });
-            } else {
-                competing.innerHTML = '<div class="hypothesis-item none">No secondary indicators</div>';
-            }
+        sortedMargins.forEach(([cls, gap]) => {
+            const row = document.createElement('div');
+            row.className = 'margin-row';
+            // Gap of 0.1 becomes a 90% wide bar (inverted to show proximity)
+            const gapWidth = Math.max(0, (1 - gap) * 100);
+            row.innerHTML = `
+                <div class="margin-label">${cls}</div>
+                <div class="margin-bar-outer"><div class="margin-bar-inner" style="width: ${gapWidth}%"></div></div>
+            `;
+            marginContainer.appendChild(row);
+        });
 
-            messageDiv.appendChild(report);
-        }
-
-        chatMessages.appendChild(messageDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-        return bubble;
-    }
-
-    function updateUI(data) {
-        turnCounter.textContent = `Investigation depth: ${data.turn_count}/5`;
+        // 5. Global Heatmap
+        const heatContainer = report.getElementById('chartHeatmap');
+        const cm = charts.global_cm;
         
-        // Handle suggestions
-        if (data.is_initial && data.ml_data) {
-            suggestedQuestions.style.display = 'block';
-            suggestedButtons.innerHTML = '';
-            
-            const p = data.ml_data.prediction;
-            const suggestions = [
-                `Evidence for ${p}?`,
-                `Model uncertainty?`,
-                `Summary report`
-            ];
+        // Header labels
+        heatContainer.appendChild(document.createElement('div')); // Empty corner
+        cm.labels.forEach(l => {
+            const cell = document.createElement('div');
+            cell.className = 'heat-cell heat-label';
+            cell.textContent = l.slice(0, 3);
+            heatContainer.appendChild(cell);
+        });
 
-            suggestions.forEach(q => {
-                const btn = document.createElement('button');
-                btn.className = 'suggested-btn';
-                btn.textContent = q;
-                btn.onclick = () => {
-                    sendMessage(q);
-                    suggestedQuestions.style.display = 'none';
-                };
-                suggestedButtons.appendChild(btn);
+        cm.matrix.forEach((row, i) => {
+            const label = document.createElement('div');
+            label.className = 'heat-cell heat-label';
+            label.textContent = cm.labels[i].slice(0, 3);
+            heatContainer.appendChild(label);
+
+            row.forEach(val => {
+                const cell = document.createElement('div');
+                cell.className = 'heat-cell';
+                const opacity = Math.min(1, val/200);
+                cell.style.background = `rgba(56, 189, 248, ${opacity})`;
+                cell.textContent = val;
+                heatContainer.appendChild(cell);
             });
+        });
+
+        diagnosticDashboard.appendChild(report);
+    }
+
+    function appendMessage(role, text) {
+        const div = document.createElement('div');
+        div.className = `message ${role}`;
+        
+        // Format bold text
+        const formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        div.innerHTML = formatted;
+        
+        chatContainer.appendChild(div);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function setLoading(isLoading) {
+        sendBtn.disabled = isLoading;
+        userInput.disabled = isLoading;
+        if (isLoading) {
+            sendBtn.innerHTML = '<div class="loader"></div>';
         } else {
-            suggestedQuestions.style.display = 'none';
+            sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
         }
     }
 
     function resetInvestigation() {
         sessionId = null;
-        turnCount = 0;
-        chatMessages.innerHTML = '';
-        turnCounter.textContent = 'Investigation depth: 0/5';
-        suggestedQuestions.style.display = 'none';
-        
-        // Initial Local Welcome
-        const welcomeText = "Welcome. I am Paranormix, your autonomous paranormal narrative investigator. Please share a narrative to begin machine learning analysis.";
-        appendMessage('ai', welcomeText);
-        
-        chatInput.value = '';
-        chatInput.style.height = 'auto';
-        chatInput.focus();
+        chatContainer.innerHTML = '';
+        diagnosticDashboard.innerHTML = '';
+        diagnosticDashboard.classList.add('dashboard-hidden');
+        userInput.value = '';
+        appendMessage('ai', 'Diagnostic Terminal active. Submit narrative for multi-axial analysis.');
     }
+
+    // --- Listeners ---
+    sendBtn.addEventListener('click', sendMessage);
+    userInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    resetBtn.addEventListener('click', resetInvestigation);
+
+    // Welcome message
+    appendMessage('ai', 'Diagnostic Terminal active. Submit narrative for multi-axial analysis.');
 });

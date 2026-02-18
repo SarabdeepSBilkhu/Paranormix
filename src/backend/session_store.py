@@ -14,7 +14,7 @@ class SessionStore:
     
     def create_session(self, session_id: str, narrative: str, prediction: str, 
                       certainty: str, evidence: list, modifiers: list,
-                      competing: list) -> None:
+                      competing: list, chart_data: dict) -> None:
         """Store analysis results in session."""
         with self.lock:
             # Clean expired sessions if at capacity
@@ -28,6 +28,7 @@ class SessionStore:
                 "evidence": evidence,
                 "modifiers": modifiers,
                 "competing": competing,
+                "chart_data": chart_data,
                 "timestamp": datetime.now(),
                 "turn_count": 0,
                 "messages": [] # Conversation history

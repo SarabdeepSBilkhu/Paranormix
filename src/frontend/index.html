@@ -17,19 +17,31 @@
         <p class="subtitle">AI-Powered Paranormal Narrative Investigation</p>
       </header>
 
-      <main class="chat-container">
-        <!-- Central Chat Panel -->
-        <section class="chat-panel" id="chatPanel">
-          <div class="chat-header">
-            <div class="bot-info">
-              <div class="bot-avatar">P</div>
-              <div class="bot-status">
-                <span class="bot-name">Paranormix (AI Investigator)</span>
-                <span class="status-indicator">Online</span>
-              </div>
+      <div class="app-container">
+        <!-- Technical Dashboard: Populates on first analysis -->
+        <div id="diagnosticDashboard" class="dashboard-hidden">
+            <!-- Dynamically injected via app.js -->
+        </div>
+
+        <!-- Chat Terminal: Active for follow-up questions -->
+        <div class="chat-wrapper">
+            <div id="chatContainer" class="chat-container">
+                <!-- Messages will appear here -->
             </div>
-            <button id="resetBtn" class="reset-btn">Reset Case</button>
-          </div>
+
+            <div class="input-area">
+                <textarea id="userInput" placeholder="Submit narrative for diagnostic analysis..." rows="1"></textarea>
+                <button id="sendBtn" title="Analyze Narrative">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="controls">
+                <button id="resetBtn" class="secondary-btn">Close Investigation</button>
+            </div>
+        </div>
+    </div>
 
           <div id="chatMessages" class="chat-messages">
             <div class="chat-message ai">
@@ -75,35 +87,46 @@
       </main>
     </div>
 
-    <!-- Results Template (Hidden, used by JS to inject analysis into bubbles) -->
-    <template id="reportTemplate">
-        <div class="investigation-report">
+    <!-- Dashboard Template (The main analysis report) -->
+    <template id="dashboardTemplate">
+        <div class="full-report">
             <div class="report-header">
-                <span>DIAGNOSTIC REPORT</span>
-                <span class="report-id">#DIAG-TRANS</span>
+                <div class="header-left">
+                    <span class="report-tag">DIAGNOSTIC CORE</span>
+                    <h1 id="dashPrediction">NARRATIVE_UNDETERMINED</h1>
+                </div>
+                <div class="header-right">
+                    <div class="certainty-pill" id="dashCertainty"></div>
+                </div>
             </div>
-            <div class="report-main">
-                <span class="prediction-badge" id="reportBadge"></span>
-                <span class="prediction-title" id="reportPrediction"></span>
-                
-                <div class="certainty-label">
-                    Diagnosis Certainty: <span id="reportCertainty" class="certainty-tag"></span>
+
+            <div class="dashboard-grid">
+                <!-- Row 1: Primary Distribution & Signal Context -->
+                <div class="dash-card">
+                    <p class="card-label">Class Score Distribution (Normalized)</p>
+                    <div class="chart-container" id="chartClassScore"></div>
                 </div>
 
-                <div class="diagnostic-grid">
-                    <div class="diagnostic-col">
-                        <p class="field-label">Hard Evidence</p>
-                        <div class="signal-tags" id="reportEvidence"></div>
-                    </div>
-                    <div class="diagnostic-col">
-                        <p class="field-label">Contextual Modifiers</p>
-                        <div class="signal-tags" id="reportModifiers"></div>
-                    </div>
+                <div class="dash-card">
+                    <p class="card-label">Certainty Driver Indicators</p>
+                    <div class="checklist-container" id="chartDrivers"></div>
                 </div>
 
-                <div class="competing-area">
-                    <p class="field-label">Competing Hypotheses</p>
-                    <div class="hypotheses-list" id="reportCompeting"></div>
+                <!-- Row 2: Contribution & Margins -->
+                <div class="dash-card">
+                    <p class="card-label">Per-Class Signal Contribution</p>
+                    <div class="contribution-chart" id="chartContribution"></div>
+                </div>
+
+                <div class="dash-card">
+                    <p class="card-label">Competing Class Margin</p>
+                    <div class="margin-chart" id="chartMargins"></div>
+                </div>
+
+                <!-- Row 3: Global Context -->
+                <div class="dash-card full-width">
+                    <p class="card-label">Global Model Overlap (Confusion Matrix Heatmap)</p>
+                    <div class="heatmap-container" id="chartHeatmap"></div>
                 </div>
             </div>
         </div>
