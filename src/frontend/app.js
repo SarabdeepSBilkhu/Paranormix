@@ -107,7 +107,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const contribs = charts.signal_contributions || {}; 
         const total = Object.values(contribs).reduce((a, b) => a + b, 0) || 1;
         
-        const catMap = { "Pattern_C": "Pattern_C", "Pattern_D": "Pattern_D", "Pattern_A": "Pattern_A" };
+        const catMap = { 
+            "Pattern_A": "Kinetic / Physical", 
+            "Pattern_B": "Sensory / Temp", 
+            "Pattern_C": "Cognitive / Information", 
+            "Pattern_D": "Visual / Optical" 
+        };
         Object.entries(contribs).forEach(([cat, val]) => {
             const p = (val / total) * 100;
             if (p > 0) {
@@ -130,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
             row.className = 'bar-row'; 
             const gapWidth = Math.max(0, (1 - gap) * 100);
             row.innerHTML = `
-                <div class="bar-lbl">${cls.slice(0, 10).toUpperCase()}</div>
+                <div class="bar-lbl">${cls.toUpperCase()}</div>
                 <div class="bar-out"><div class="bar-in" style="width: ${gapWidth}%; opacity: 0.5;"></div></div>
             `;
             marginContainer.appendChild(row);

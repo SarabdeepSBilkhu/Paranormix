@@ -187,7 +187,7 @@ body {
 /* Charts */
 .chart-box { display: flex; flex-direction: column; gap: 8px; }
 .bar-row { display: flex; align-items: center; gap: 12px; }
-.bar-lbl { font-family: var(--font-mono); font-size: 0.7rem; width: 100px; color: var(--text-dim); }
+.bar-lbl { font-family: var(--font-mono); font-size: 0.7rem; width: 115px; color: var(--text-dim); }
 .bar-out { flex: 1; height: 10px; background: rgba(255,255,255,0.05); border-radius: 2px; }
 .bar-in { height: 100%; background: var(--primary); width: 0; transition: width 1s ease-out; }
 
