@@ -96,7 +96,7 @@ class ParanormalInvestigator:
             "competing_hypotheses": [h[0] for h in ranked_hypotheses if h[0] != prediction][:3],
             "chart_data": {
                 "class_scores": normalized_scores,
-                "signal_contributions": category_weights.get(prediction, category_weights.get(winner, {})),
+                "signal_contributions": category_weights,
                 "margins": margins,
                 "certainty_drivers": drivers,
                 "global_cm": {
@@ -113,7 +113,7 @@ class ParanormalInvestigator:
         }
     
     def _calculate_category_weights(self, text):
-        """Calculate weight contributions per category for the winner"""
+        """Calculate weight contributions per category"""
         text_lower = text.lower()
         cats = {
             "psychological": ["voice", "insane", "hallucination", "mind", "remember", "dream"],
@@ -121,12 +121,11 @@ class ParanormalInvestigator:
             "physical": ["thrown", "crash", "bang", "slam", "moved", "rattle"]
         }
         
-        # Generic weight calculation for any class
         weights = {}
         for cat, keywords in cats.items():
             weights[cat] = sum(1 for k in keywords if k in text_lower)
             
-        return {"current": weights} # Simplified for display
+        return weights
 
     def _extract_diagnostic_signals(self, text):
         """Rigidly separate hard evidence from interpretive bias"""

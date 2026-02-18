@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 3. Signal Contribution (Stacked Bar)
         const contribChart = report.getElementById('chartContribution');
-        const contribs = charts.signal_contributions.current; 
+        const contribs = charts.signal_contributions || {}; 
         const total = Object.values(contribs).reduce((a, b) => a + b, 0) || 1;
         
         Object.entries(contribs).forEach(([cat, val]) => {

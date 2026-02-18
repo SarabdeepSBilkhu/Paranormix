@@ -86,7 +86,8 @@ header h1 {
 
 /* Dashboard Styles */
 #diagnosticDashboard {
-    flex: 1.5;
+    flex: 0 0 auto; /* Don't grow by default, use content height or fixed */
+    max-height: 60vh;
     background: #020617;
     padding: 2rem;
     overflow-y: auto;
@@ -95,13 +96,10 @@ header h1 {
 }
 
 .dashboard-hidden {
-    flex: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-    border: none !important;
+    display: none !important;
 }
 
-.full-report { max-width: 1200px; margin: 0 auto; }
+.full-report { max-width: 1000px; margin: 0 auto; }
 
 .report-header {
     display: flex;
@@ -207,24 +205,58 @@ header h1 {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 1.5rem;
+    padding: 2rem;
     background: var(--bg);
+    overflow: hidden;
+    max-width: 1000px;
+    margin: 0 auto;
+    width: 100%;
 }
 
-.chat-container { flex: 1; overflow-y: auto; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+.chat-container { 
+    flex: 1; 
+    overflow-y: auto; 
+    margin-bottom: 2rem; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 1.5rem;
+    padding-right: 0.5rem;
+}
 
-.message { max-width: 80%; padding: 1rem; border-radius: 12px; font-size: 0.95rem; }
-.user { align-self: flex-end; background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); }
-.ai { align-self: flex-start; background: transparent; border-left: 3px solid var(--primary); color: var(--text-main); padding-left: 1.5rem; border-radius: 0; }
+.message { 
+    max-width: 75%; 
+    padding: 1.25rem; 
+    border-radius: 16px; 
+    font-size: 1rem;
+    position: relative;
+}
+
+.user { 
+    align-self: flex-end; 
+    background: var(--card-bg); 
+    border: 1px solid var(--border); 
+    color: var(--text-main);
+    border-bottom-right-radius: 4px;
+}
+
+.ai { 
+    align-self: flex-start; 
+    background: rgba(56, 189, 248, 0.05); 
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-left: 4px solid var(--primary); 
+    color: var(--text-main); 
+    border-radius: 16px 16px 16px 4px;
+}
 
 .input-area {
     display: flex;
     gap: 1rem;
     background: var(--card-bg);
-    padding: 1rem;
-    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    border-radius: 16px;
     border: 1px solid var(--border);
     margin-bottom: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 textarea {
