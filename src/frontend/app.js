@@ -224,6 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial Greeting
     appendMessage(
         "ai",
-        "**PARANORMIX_ANALYST_DECODER_READY.**\n\nPlease submit a subject narrative for axial capture and empirical pattern analysis. Minimum 50 characters required for statistical significance."
+        "**System ready.**\n\nPlease share your narrative when you're ready. I'll identify the patterns and provide a technical breakdown once the analysis is complete."
     );
 });
