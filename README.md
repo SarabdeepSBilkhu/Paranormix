@@ -1,37 +1,38 @@
-# Paranormix - AI Diagnostic Terminal
+# Paranormix - XAI Research Terminal
 
-A high-fidelity machine learning system for the multi-axial analysis of paranormal narratives. Paranormix combines a deterministic scikit-learn classifier with a conversational decoder layer to provide grounded, measurement-based insights without speculative interpretation.
+A high-fidelity Explainable AI (XAI) research terminal for the multi-axial analysis of paranormal narratives. Paranormix combines a deterministic scikit-learn engine with a human-centric Analyst Decoder to provide grounded, measurement-based insights through a dynamic research interface.
 
 ## 🚀 Overview
 
-Paranormix is a **Technical Diagnostic Terminal**. It bridges the gap between raw machine learning output and human understanding by serving as a conversational manual for the model's findings.
+Paranormix is a **Technical Diagnostic Terminal** designed for researchers to decode the hidden patterns within subject narratives. It prioritizes **Progressive Disclosure**—revealing empirical metrics only when they serve to clarify the diagnostic axial capture.
 
-- **Entity Engine**: Classifies narratives into five distinct categorical types.
-- **Visual Diagnostic Suite**: Real-time dashboard for class distributions, signal contributions, and classification margins.
-- **Empirical Certainty**: Certainty metrics calibrated by model stability (Resolution Boundaries) rather than just scalar probability.
-- **Conversational Decoder**: An AI assistant that translates internal signal weights into human-friendly, grounded insights using progressive disclosure.
+### Key Features:
+
+- **Humanized Analyst Persona**: A conversational decoder that speaks as a technical expert, weaving empirical findings into natural, explanatory dialogue.
+- **Dynamic 50/50 Split Layout**: The interface begins as a focused full-page chat and smoothly transitions to a balanced split-screen view revealing the **Empirical Data Axis** on the right.
+- **V3.01 Research Schema**:
+  - **Confidence Bands**: High, Moderate, and Low certainty mapping for academic calibration.
+  - **Stability Indicators**: Explicit reporting of historical class overlap and resolution boundaries.
+  - **Grouped Signals**: Clear distinction between **Observed Patterns** and **Absent Indicators**.
+- **Deterministic Grounding**: The Analyst logic is locked to a 0.0 temperature setting, ensuring maximum factual consistency with the underlying ML models.
 
 ## 📁 Project Structure
 
 ```
 Paranormix/
-├── data/                       # Prototypical narrative datasets
-├── models/                     # Trained ML model binaries (.pkl)
 ├── src/
-│   ├── ml/                     # ML Engine (Preprocessing, Training, Inference)
-│   │   ├── preprocessing.py    # Unified lemmatization & tokenization
-│   │   └── inference.py        # Pattern-based diagnostic analyzer
-│   ├── backend/                # FastAPI & Chat Orchestration
-│   │   ├── main.py             # Unified /chat and /diagnostic endpoints
+│   ├── ml/                     # The Engine (Pattern Extraction & Inference)
+│   │   └── inference.py        # Research Logic & Measurement Layer
+│   ├── backend/                # The Brain (Chat Orchestration & API)
+│   │   ├── main.py             # Human Analyst Persona & Session Context
 │   │   └── session_store.py    # Memory-based context management
-│   ├── frontend/               # Visual Diagnostic Suite
-│   │   ├── index.html          # Split-screen dashboard layout
-│   │   ├── style.css           # Dynamic charting styles
-│   │   └── app.js              # State & Rendering logic
-│   └── tests/                  # API & Conversation verification
-├── .env                        # Configuration (API Keys, TTL)
+│   ├── frontend/               # The Terminal (Research Interface)
+│   │   ├── index.html          # Dynamic 50/50 split-screen layout
+│   │   ├── style.css           # Humanized Research Aesthetic
+│   │   └── app.js              # Axial reveal & Rendering logic
+├── .env                        # Configuration (Groq API, TTL)
 ├── requirements.txt            # System dependencies
-└── TECHNICAL_DOCUMENTATION.md  # Deep dive into diagnostic internals
+└── TECHNICAL_DOCUMENTATION.md  # Exhaustive deep dive into XAI internals
 ```
 
 ## 🛠️ Setup
@@ -39,7 +40,7 @@ Paranormix/
 ### Prerequisites
 
 - **Python 3.9+**
-- **LLM API Key**: Supports Groq (default Llama-3-8b).
+- **Groq API Key**: (Default: Llama-3-8b-instant) for the Analyst layer.
 
 ### Installation
 
@@ -51,39 +52,28 @@ Paranormix/
    pip install -r requirements.txt
    ```
 3. **Environment Variables**:
-   Create a `.env` file:
-   ```env
-   GROQ_API_KEY=your_key_here
-   MAX_CHAT_TURNS=5
-   ```
+   Create a `.env` file with your `GROQ_API_KEY`.
 
 ## 🏃 Usage
 
-1. **Start the Terminal**:
+1. **Start the Research Terminal**:
    ```bash
    uvicorn src.backend.main:app --reload
    ```
-2. **Open the interface**:
-   Launch `http://localhost:8000` in your browser.
-3. **Analyze**:
-   - Paste a story of at least 50 characters.
-   - Review the **Visual Diagnostic Report** for signal overlap and classification margins.
-   - Use the **Conversational Panel** to ask specific questions about certainty or class definitions.
+2. **Access the Terminal**: Launch `http://localhost:8000` in your browser.
+3. **Perform Analysis**:
+   - Provide a subject narrative (min 50 characters).
+   - Observe the **Axial Reveal**: The chat moves left to reveal the diagnostic metrics on the right.
+   - Interrogate the **Human Analyst** to decode the specific signals and stability indicators.
 
-## 📊 Model Architecture
+## ⚖️ Operational Protocols
 
-- **Engine**: TF-IDF (15,000 Trigrams) + SGD Logistic Regression.
-- **Certainty Logic**: Empirical calibration based on class transition boundaries.
-- **Signal Logic**: Pure-measurement pattern matching (Kinetic, Visual, Cognitive, Sensory).
+To maintain research integrity, the Analyst is strictly constrained:
 
-## ⚖️ Operational Boundaries
-
-Paranormix is a **non-interpretive** tool. The AI conversational layer is programmed to:
-
-1. Lock identity to the model's dominant prediction.
-2. Refuse case-level reasoning (speculating on "why" a story matters).
-3. Translate raw measurements into conceptual definitions.
+1. **No Speculation**: The Analyst refuses to explain _why_ a paranormal event occurred.
+2. **Identity Lock**: Responses must never contradict the model's primary diagnosis.
+3. **Technical Transparency**: All metadata (word counts, timestamps) is provided for academic traceability.
 
 ---
 
-Developed for research in Machine Learning Interpretability and Diagnostic Visualization.
+Developed for AI Interpretability and Machine Learning Diagnostic Research.
