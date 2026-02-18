@@ -43,26 +43,22 @@ else:
     print("WARNING: GROQ_API_KEY not found. Chat functionality will be disabled.")
 
 # System prompt for chatbot
-SYSTEM_PROMPT = """You are Paranormix, an AI investigation assistant that explains machine learning analysis results.
+SYSTEM_PROMPT = """You are Paranormix, a conversational investigator's assistant. Your job is to translate complex ML analysis into human-friendly, grounded insights.
 
-Your role:
-• Help users understand the analysis report produced by the ML system
-• Answer questions about predictions, confidence, detected signals, and uncertainty
-• Clarify what different classes and metrics mean in general terms
+CONVERSATIONAL PROTOCOL:
+1. No Meta-Language: Never say "The analysis report shows," "Selected class is," or "The data indicates." Instead, anchor descriptions in the user's narrative (e.g., "This means for your account...", "Your story aligns most with...").
+2. Progressive Disclosure:
+   - Turn 1 (Initial Report): ONLY confirm the analysis is done, state the primary result and confidence, and invite specific questions. Do NOT list signals, competitors, or boundaries yet.
+   - Subsequent Turns: Reveal details ONLY when asked. If asked "why," explain the conceptual influence of signals rather than listing technical pattern IDs.
+3. Natural Translation: Translate internal codes (like Pattern_A) into human terms (like "physical disturbance") using the provided Translation Key.
+4. Anchoring: Always link findings back to the user's specific story details to make the interaction feel personal and grounded.
 
-Strict boundaries:
-• You do NOT decide the classification
-• You do NOT claim insight into internal model weights
-• You ONLY explain using the provided analysis data
-• You do NOT judge whether the narrative is true or false
+STRICT BOUNDARIES:
+- You do NOT decide the classification; you decode it.
+- You do NOT claim insight into model weights.
+- You do NOT judge the truth of the narrative.
 
-Allowed explanations:
-• Why certain narrative signals commonly influence a class
-• What confidence and uncertainty indicate
-• How to interpret overlapping probabilities
-• What each paranormal category represents
-
-If asked something outside the analysis scope, state that it cannot be determined from the model output.
+Tone: Professional, empathetic, direct, and conversational.
 """
 
 class ChatInput(BaseModel):
@@ -111,24 +107,24 @@ async def chat(input_data: ChatInput):
 
             # Initialize history with the story and hidden diagnostic report
             session_store.append_message(session_id, "user", f"SUBJECT NARRATIVE: {input_data.user_message}")
-            report_context = f"""INTERNAL ANALYSIS REPORT (REFERENCE DATA — DO NOT ALTER):
+            report_context = f"""INTERNAL DIAGNOSTIC REFERENCE (NOT FOR RECITATION):
 
+TRANSLATION KEY:
+- Pattern_A: Physical disturbance / Kinetic energy
+- Pattern_B: Sensory distortion / Temperature shift
+- Pattern_C: Information-based / Historical matching
+- Pattern_D: Visual anomaly / Residual echo
+- resolution_boundary: Historical model overlap area
+
+MEASUREMENT DATA:
 Selected Class: {result['prediction']}
-Confidence: {result['certainty']}
+Certainty: {result['certainty']}
+Detected Patterns: {', '.join(result.get('detected_patterns', ['None']))}
+Absent Patterns: {', '.join(result.get('constraints', ['None']))}
+Competitors: {', '.join([f"{h['class']} ({h['label']})" for h in result.get('ranked_matches', [])])}
+Resolution Limit: {result.get('resolution_limit', 'None')}
 
-Detected Signals:
-- {', '.join(result.get('detected_patterns', ['None']))}
-
-Contextual Modifiers:
-- {', '.join(result.get('modifiers', ['None']))}
-
-Competing Classes:
-- {', '.join([f"{h['class']} ({h['label']})" for h in result.get('ranked_matches', [])])}
-
-Resolution Boundary:
-- {result.get('resolution_limit', 'None')}
-
-This data represents the output of the ML model. Use it as factual input when answering user questions.
+Note: Use these details ONLY when asked. Initial turn should be a Confirm-Result-Invite response.
 """
             session_store.append_message(session_id, "system", report_context)
             is_initial_analysis = True
@@ -169,17 +165,7 @@ This data represents the output of the ML model. Use it as factual input when an
             temperature=0.1
         )
 
-        raw_response = response.choices[0].message.content
-
-        if is_initial_analysis:
-            bot_response = (
-                "Analysis complete. I’ve classified the narrative and identified key signals. "
-                "You can ask about the prediction, confidence, uncertainty, or how to interpret the results.\n\n"
-                + raw_response
-            )
-        else:
-            bot_response = raw_response
-
+        bot_response = response.choices[0].message.content
         session_store.append_message(session_id, "assistant", bot_response)
 
         

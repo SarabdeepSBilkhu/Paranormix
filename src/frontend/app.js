@@ -213,6 +213,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     appendMessage(
         "ai",
-        "When you're ready, paste a narrative. After analysis, you can ask questions about the prediction or confidence."
+        "Hello! I'm here to help you analyze your narrative. When you're ready, paste your story below and I'll begin the investigation."
     );
 });
