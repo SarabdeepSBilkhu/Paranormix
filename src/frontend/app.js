@@ -211,6 +211,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     resetBtn.addEventListener('click', resetInvestigation);
 
-    // Welcome message
-    appendMessage('ai', 'DIAGNOSTIC_TERMINAL_V2.1 active. Submit narrative for multi-axial analysis.');
+    appendMessage(
+        "ai",
+        "When you're ready, paste a narrative. After analysis, you can ask questions about the prediction or confidence."
+    );
 });
