@@ -84,8 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const driverContainer = report.getElementById('chartDrivers');
         const driverMap = {
             "multi_class_overlap": "PROBABILITY_OVERLAP",
-            "systemic_ambiguity": "SYSTEMIC_STABILITY_LIMIT",
-            "signal_contradiction": "SIGNAL_CONFLICT"
+            "resolution_boundary": "RESOLUTION_BOUNDARY",
+            "signal_conflict": "SIGNAL_CONFLICT"
         };
         Object.entries(charts.certainty_drivers).forEach(([key, active]) => {
             const item = document.createElement('div');
@@ -102,12 +102,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const contribs = charts.signal_contributions || {}; 
         const total = Object.values(contribs).reduce((a, b) => a + b, 0) || 1;
         
-        const catMap = { "psychological": "psych", "sensory": "sensor", "physical": "phys" };
+        const catMap = { "Pattern_C": "Pattern_C", "Pattern_D": "Pattern_D", "Pattern_A": "Pattern_A" };
         Object.entries(contribs).forEach(([cat, val]) => {
             const p = (val / total) * 100;
             if (p > 0) {
                 const seg = document.createElement('div');
-                seg.className = `seg ${catMap[cat] || ''}`;
+                seg.className = `seg ${catMap[cat] || 'phys'}`;
                 seg.style.width = `${p}%`;
                 seg.title = `${cat}: ${val} signals`;
                 contribChart.appendChild(seg);

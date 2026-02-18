@@ -201,9 +201,11 @@ body {
 /* Stacked bar */
 .stacked-bar { height: 36px; display: flex; border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
 .seg { height: 100%; transition: width 1s ease-out; }
-.seg.psych { background: var(--c-psych); }
-.seg.sensor { background: var(--c-sens); }
-.seg.phys { background: var(--c-phys); }
+
+/* Pattern Mapping */
+.Pattern_C, .psych { background: var(--c-psych); }
+.Pattern_D, .sensor { background: var(--c-sens); }
+.Pattern_A, .phys { background: var(--c-phys); }
 
 .legend-group { display: flex; gap: 15px; }
 .legend-item { font-size: 0.7rem; color: var(--text-dim); display: flex; align-items: center; gap: 5px; }

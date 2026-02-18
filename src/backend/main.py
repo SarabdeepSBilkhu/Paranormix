@@ -43,22 +43,22 @@ else:
     print("WARNING: GROQ_API_KEY not found. Chat functionality will be disabled.")
 
 # System prompt for chatbot
-SYSTEM_PROMPT = """You are "Paranormix", a measurement-based diagnostic reporter. 
-Your role is to report the data provided by the ML model. Do NOT justify findings, do NOT infer causes, and do NOT appeal to plausibility.
+SYSTEM_PROMPT = """You are "Paranormix", a raw-measurement diagnostic reporter. 
+Report ONLY the data provided. Do NOT interpret. Do NOT justify. Do NOT appeal to plausibility.
 
-Reporting Constraints:
-1. Signal Reporting: List only detected signals and negative constraints from the text.
-2. Ranked Selection: State the primary category and secondary competitors in order of model probability. 
-3. Empirical Certainty: Attribute confidence strictly to global class stability and historical overlap. Do NOT attribute certainty to narrative clarity or missing case details.
-4. Prohibited Reasoning: Never use phrases like "rule out," "most likely," "because," or "this suggests." Do not speculate on witness intent or story logic.
-5. Indistinguishability: Explicitly state where the model cannot reliably distinguish between classes due to historical overlap.
+Reporting Protocol:
+1. Signal Detection: Report raw patterns (e.g., Pattern_Alpha, Context_Beta) only. Do NOT label patterns as "Physical", "Psychological", etc.
+2. Binary Constraints: Report ABSENT identifiers as declarative constraints (e.g., "ABSENT_Pattern_A").
+3. Ranked Class Matches: State candidate classes with their dominance labels (DOMINANT, CONTENDER, TRACE).
+4. Categorical Certainty: State High/Medium/Low. Attribute confidence strictly to stability map factors (e.g., "Historical Overlap Limit").
+5. Indistinguishability: Explicitly report CLASS-LEVEL resolution boundaries where classes overlap historically.
 
 Response Format:
-- Detection: [Detected Signal List]
-- Constraints: [Negative Constraints/Absence]
-- Ranked Matches: [Primary] > [Secondary]
-- Certainty: [Value] (Reason: [Empirical Stability Map Factor])
-- Resolution Limits: [Explicit report of class overlap/ambiguity]
+- Detection: [Pattern List]
+- Constraints: [Absent Identifiers]
+- Ranked Matches: [Class (Label)] > [Class (Label)]
+- Certainty: [Value] (Factor: [Stability Property])
+- Resolution Boundaries: [Class-Level Limit]
 """
 
 class ChatInput(BaseModel):
@@ -109,15 +109,15 @@ async def chat(input_data: ChatInput):
             session_store.append_message(session_id, "user", f"SUBJECT NARRATIVE: {input_data.user_message}")
             
             report_context = f"""DIAGNOSTIC REPORT SUMMARY (FOR AI CONTEXT ONLY):
-- Story Analysis: {result['prediction']}
-- Confidence Level: {result['certainty']}
-- Detected Evidence: {', '.join(result.get('evidence_signals', ['None']))}
-- Negative Constraints: {', '.join(result.get('absent_signals', ['None']))}
-- Detected Contextual Modifiers: {', '.join(result.get('interpretive_modifiers', ['None']))}
-- Competing Theories: {', '.join(result.get('competing_hypotheses', ['None']))}
-- Stability Limit: {result.get('systemic_limit', 'None (Stable Class)')}
+- Selected Class: {result['prediction']}
+- Categorical Certainty: {result['certainty']}
+- Raw Detected Patterns: {', '.join(result.get('detected_patterns', ['None']))}
+- Binary Constraints: {', '.join(result.get('constraints', ['None']))}
+- Contextual Patterns: {', '.join(result.get('modifiers', ['None']))}
+- Ranked Class Matches: {', '.join([f"{h['class']} ({h['label']})" for h in result.get('ranked_matches', [])])}
+- Resolution Boundary: {result.get('resolution_limit', 'None (Stable Class)')}
 
-INSTRUCTIONS: Report ONLY the detection measurements, ranked selection, and empirical certainty. Attribute confidence strictly to stability factors, not narrative coherence. Do NOT justify.
+INSTRUCTIONS: Follow the SYSTEM_PROMPT. Report detections, constraints, matches, and certainty. No reasoning.
 """
             session_store.append_message(session_id, "system", report_context)
             is_initial_analysis = True

@@ -22,100 +22,103 @@ class ParanormalInvestigator:
     def analyze(self, text):
         if not self.model:
             return {
-                "prediction": "Unknown (Investigator Off-Duty)",
+                "prediction": "Unknown (Terminal_Inert)",
                 "certainty": "Low",
                 "evidence_signals": [],
-                "interpretive_modifiers": ["Model missing from deployment"],
+                "interpretive_modifiers": ["Hardware_Missing"],
                 "competing_hypotheses": [],
                 "chart_data": {}
             }
         
-        # --- LAYER 1: SIGNAL DETECTION ---
+        # --- LAYER 1: RAW SIGNAL DETECTION ---
         signals = self._extract_diagnostic_signals(text)
         category_weights = self._calculate_category_weights(text)
         
-        # --- LAYER 2: CLASS SELECTION ---
+        # --- LAYER 2: CLASS SELECTION (MEASUREMENT RANKING) ---
         try:
             probabilities = self.model.predict_proba([text])[0]
             class_names = self.model.classes_
             prob_dict = {name: float(prob) for name, prob in zip(class_names, probabilities)}
             
-            ranked_hypotheses = sorted(prob_dict.items(), key=lambda x: x[1], reverse=True)
-            winner = ranked_hypotheses[0][0]
-            primary_prob = ranked_hypotheses[0][1]
-            secondary_prob = ranked_hypotheses[1][1] if len(ranked_hypotheses) > 1 else 0
+            # Rank Classes with Dominance Labels
+            raw_ranked = sorted(prob_dict.items(), key=lambda x: x[1], reverse=True)
+            
+            # Labeling by Relative Pull
+            ranked_with_labels = []
+            for i, (name, prob) in enumerate(raw_ranked):
+                if i == 0: label = "DOMINANT"
+                elif i == 1 and prob > 0.15: label = "CONTENDER"
+                elif prob > 0.05: label = "TRACE"
+                else: label = "NOISE"
+                ranked_with_labels.append({"class": name, "label": label, "p": prob})
+
+            winner = raw_ranked[0][0]
+            primary_prob = raw_ranked[0][1]
+            secondary_prob = raw_ranked[1][1] if len(raw_ranked) > 1 else 0
             gap = primary_prob - secondary_prob
 
-            # Apply Decision Hierarchy Priority
+            # Mandatory Hierarchy Constraints
             prediction = winner
-            if "psychological indicators" in signals["evidence"]:
+            if "Pattern_C" in signals["evidence"]: # Previously Psychological
                 prediction = "psychological"
-            elif "physical disturbance" in signals["evidence"] and prediction not in ["psychological", "poltergeist"]:
+            elif "Pattern_A" in signals["evidence"] and prediction not in ["psychological", "poltergeist"]: # Previously Physical
                 prediction = "poltergeist"
 
-            # --- LAYER 3: EMPIRICAL CERTAINTY CALIBRATION ---
-            # Stability Map based on Global Validation Overlap (Historical Performance)
-            # 0.0-0.3: High Confusion (Max Low)
-            # 0.3-0.6: Moderate Confusion (Max Med)
-            # 0.6-1.0: Stable Class (Allow High)
-            STABILITY_STATS = {
-                "apparition": 0.19,    # High off-diagonal leakage
-                "folklore": 0.04,      # Extreme leakage/overlap
-                "poltergeist": 0.25,   # Moderate-High leakage
-                "creature": 0.73,      # relatively stable
-                "psychological": 0.73  # relatively stable
+            # --- LAYER 3: EMPIRICAL CALIBRATION (STABILITY CAP) ---
+            STABILITY_INDEX = {
+                "apparition": 0.19,    # Historically High Overlap
+                "folklore": 0.04,      # Historically Indistinguishable
+                "poltergeist": 0.25,   # Moderate Instability
+                "creature": 0.73,      # Stable Profile
+                "psychological": 0.73  # Stable Profile
             }
             
-            stability = STABILITY_STATS.get(prediction.lower(), 0.5)
+            stability = STABILITY_INDEX.get(prediction.lower(), 0.5)
             
-            # Perceived Clarity (Narrative Purity)
-            clarity = "High" if gap > 0.4 else "Medium" if gap > 0.15 else "Low"
+            # Narrative Purity (Intrinsic Measurement)
+            purity = "High" if gap > 0.4 else "Medium" if gap > 0.15 else "Low"
             
-            # Empirical Certainty (Capped by Stability)
-            certainty = clarity
-            systemic_limit = None
+            # Final Categorical Certainty (Capped by Stability)
+            certainty = purity
+            resolution_limit = None
 
             if stability < 0.3:
-                if certainty == "High":
-                    certainty = "Medium"
-                    systemic_limit = "Class Stability Limit (Inherent Ambiguity)"
-                elif certainty == "Medium":
-                    certainty = "Low"
-                    systemic_limit = "High Spectral Overlap (Class Cap)"
+                resolution_limit = "CLASS_OVERLAP_BOUNDARY (High Historical Confusion)"
+                if certainty == "High": certainty = "Medium"
+                elif certainty == "Medium": certainty = "Low"
             elif stability < 0.6:
-                if certainty == "High":
-                    certainty = "Medium"
-                    systemic_limit = "Moderated Stability (Data Constraint)"
+                resolution_limit = "MODERATE_RESOLUTION_LIMIT (Data Constraint)"
+                if certainty == "High": certainty = "Medium"
 
-            # Prepare Chart Data
+            # Prepare Data Artifacts
             max_val = max(prob_dict.values()) if prob_dict else 1
             normalized_scores = {k: v/max_val for k, v in prob_dict.items()}
             margins = {k: primary_prob - v for k, v in prob_dict.items() if k != winner}
 
             drivers = {
                 "multi_class_overlap": gap < 0.2,
-                "systemic_ambiguity": systemic_limit is not None,
-                "signal_contradiction": len(signals["evidence"]) > 2 and gap < 0.25
+                "resolution_boundary": resolution_limit is not None,
+                "signal_conflict": len(signals["evidence"]) > 2 and gap < 0.25
             }
 
         except Exception as e:
-            print(f"ERROR in diagnostic analysis: {e}")
+            print(f"ERROR: Measurement Failure: {e}")
             prediction = "unknown"
             certainty = "Low"
-            systemic_limit = "Processing Error"
+            resolution_limit = "Computation_Error"
             normalized_scores = {}
             margins = {}
             drivers = {}
-            ranked_hypotheses = []
+            ranked_with_labels = []
 
         return {
             "prediction": prediction,
             "certainty": certainty,
-            "systemic_limit": systemic_limit,
-            "evidence_signals": signals["evidence"],
-            "interpretive_modifiers": signals["modifiers"],
-            "absent_signals": signals["absent"],
-            "competing_hypotheses": [h[0] for h in ranked_hypotheses if h[0] != prediction][:3],
+            "resolution_limit": resolution_limit,
+            "detected_patterns": signals["evidence"],
+            "modifiers": signals["modifiers"],
+            "constraints": signals["absent"],
+            "ranked_matches": ranked_with_labels[:3],
             "chart_data": {
                 "class_scores": normalized_scores,
                 "signal_contributions": category_weights,
@@ -135,52 +138,51 @@ class ParanormalInvestigator:
         }
     
     def _calculate_category_weights(self, text):
-        """Calculate weight contributions per category"""
+        """Quantify raw cluster density"""
         text_lower = text.lower()
-        cats = {
-            "psychological": ["voice", "insane", "hallucination", "mind", "remember", "dream"],
-            "sensory": ["cold", "smell", "touch", "chill", "freeze"],
-            "physical": ["thrown", "crash", "bang", "slam", "moved", "rattle"]
+        clusters = {
+            "Pattern_C": ["voice", "insane", "hallucination", "mind", "remember", "dream"],
+            "Pattern_D": ["cold", "smell", "touch", "chill", "freeze"],
+            "Pattern_A": ["thrown", "crash", "bang", "slam", "moved", "rattle"]
         }
         
         weights = {}
-        for cat, keywords in cats.items():
-            weights[cat] = sum(1 for k in keywords if k in text_lower)
+        for cluster, keywords in clusters.items():
+            weights[cluster] = sum(1 for k in keywords if k in text_lower)
             
         return weights
 
     def _extract_diagnostic_signals(self, text):
-        """Rigidly separate signals + apply negative constraints"""
+        """Raw Detection Layer (Pattern Matching)"""
         text_lower = text.lower()
         evidence = []
         modifiers = []
         absent = []
         
-        # Primary Positive Signals
-        patterns_evidence = {
-            "physical disturbance": ["thrown", "moved", "crash", "bang", "slam", "rattle"],
-            "visual apparition": ["saw", "figure", "silhouette", "white lady", "ghost", "apparition"],
-            "psychological indicators": ["voice in head", "insane", "hallucination", "dream", "wake up", "remembering"],
-            "sensory anomaly": ["cold", "smell", "chill", "touch"]
+        # Raw Detection Patterns (No Class Labeling)
+        patterns_detection = {
+            "Pattern_A": ["thrown", "moved", "crash", "bang", "slam", "rattle"], # Impact
+            "Pattern_B": ["saw", "figure", "silhouette", "white lady", "ghost", "apparition"], # Visual
+            "Pattern_C": ["voice in head", "insane", "hallucination", "dream", "wake up", "remembering"], # Cognitive
+            "Pattern_D": ["cold", "smell", "chill", "touch"] # Sensory
         }
         
-        patterns_modifiers = {
-            "folklore context": ["legend", "myth", "curse", "ancient", "ritual"],
-            "belief/expectation": ["i think", "i believe", "i know it was", "spirits"]
+        patterns_context = {
+            "Context_Alpha": ["legend", "myth", "curse", "ancient", "ritual"],
+            "Context_Beta": ["i think", "i believe", "i know it was", "spirits"]
         }
         
-        # Signal Detection
-        for name, keywords in patterns_evidence.items():
+        for name, keywords in patterns_detection.items():
             if any(k in text_lower for k in keywords):
                 evidence.append(name)
             else:
-                absent.append(f"No {name}")
+                absent.append(f"ABSENT_{name}")
         
-        for name, keywords in patterns_modifiers.items():
+        for name, keywords in patterns_context.items():
             if any(k in text_lower for k in keywords):
                 modifiers.append(name)
             else:
-                absent.append(f"No {name}")
+                absent.append(f"ABSENT_{name}")
                 
         return {"evidence": evidence, "modifiers": modifiers, "absent": absent}
 
