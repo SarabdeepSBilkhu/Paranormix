@@ -20,12 +20,54 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 
 # Heuristic Keywords for Strong Signal Filtering
 KEYWORDS = {
-    "apparition": ["ghost", "spirit", "shade", "specter", "figure", "silhouette", "white lady", "apparition", "transparent", "misty", "ethereal"],
-    "poltergeist": ["thrown", "crash", "bang", "loud", "knock", "slam", "levitate", "fly across", "scratch", "shattered", "thump", "rattle"],
-    "folklore": ["legend", "myth", "ritual", "ancient", "curse", "tradition", "elder", "village", "townspeople", "shrine", "ancestor", "curse"],
-    "creature": ["eyes", "teeth", "claws", "beast", "monster", "fur", "growl", "creature", "thing", "cryptid", "paws", "snarl"],
-    "psychological": ["crazy", "insane", "mind", "head", "voice", "remember", "dream", "wake up", "hallucination", "paranoia", "delusion", "trauma"]
+    "apparition": [
+        "ghost", "spirit", "shade", "specter", "apparition",
+        "figure", "silhouette", "shadow", "reflection", "mirror",
+        "transparent", "misty", "ethereal", "faded", "vanished", "appeared",
+        "presence", "watching", "stare", "whisper", "breath",
+        "cold", "chill", "icy", "freeze", "goosebumps"
+    ],
+
+    "poltergeist": [
+        "thrown", "crash", "bang", "loud", "knock", "slam",
+        "dragged", "pulled", "pushed", "levitate", "fly across",
+        "scratch", "shattered", "thump", "rattle",
+        "footsteps", "door slammed", "drawer", "cupboard",
+        "again", "repeatedly", "every night", "on its own"
+    ],
+
+    "folklore": [
+        "legend", "myth", "folklore", "ritual", "ancient",
+        "curse", "cursed", "tradition", "custom", "taboo",
+        "elder", "ancestors", "generations", "passed down",
+        "warning", "forbidden", "spoken of", "written record",
+        "annual", "seasonal",
+        "village", "townspeople", "shrine", "temple",
+        "well", "forest", "hill", "ruins", "burial ground"
+    ],
+
+    "creature": [
+        "creature", "monster", "beast", "thing", "cryptid",
+        "eyes", "glowing eyes", "teeth", "fangs", "claws", "paws",
+        "fur", "scales", "tail",
+        "growl", "snarl", "breathing", "heavy breathing",
+        "footsteps", "chased", "stalked", "followed",
+        "crouched", "looming", "lunged",
+        "blood", "wounds", "scratches", "bite"
+    ],
+
+    "psychological": [
+        "dream", "nightmare", "hallucination", "delusion",
+        "paranoia", "anxiety", "panic", "stress", "trauma",
+        "voice", "voices", "inside my head",
+        "imagined", "felt unreal", "couldn't tell",
+        "memory", "forgot", "can't recall", "memory gap",
+        "sleep deprived", "insomnia", "exhausted",
+        "therapy", "doctor", "medication",
+        "crazy", "insane", "losing my mind"
+    ]
 }
+
 
 def get_signal_strength(text, label):
     words = KEYWORDS.get(label, [])
@@ -37,7 +79,7 @@ def train_model():
     
     # Load data
     if not os.path.exists(PROCESSED_DATA_PATH):
-        print(f"❌ Ectoplasm missing! {PROCESSED_DATA_PATH} not found.")
+        print(f"Ectoplasm missing! {PROCESSED_DATA_PATH} not found.")
         return
 
     with open(PROCESSED_DATA_PATH, "r") as f:
