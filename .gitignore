@@ -15,10 +15,10 @@ lib/
 include/
 share/
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
+# Python (Recursive)
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
 .pytest_cache/
 .coverage
 htmlcov/
@@ -32,9 +32,12 @@ coverage.xml
 *.egg
 MANIFEST
 
+# Research & Development
+scripts/
+src/tests/
+
 # Data & Models
-data/processed/
-data/raw/*.json
+data/*.json
 # models/*.pkl
 *.xlsx
 
@@ -42,6 +45,7 @@ data/raw/*.json
 .DS_Store
 Thumbs.db
 TECHNICAL_DOCUMENTATION.md
+AI_CONCEPTS_EXPLAINED.md
 
 # IDEs
 .vscode/

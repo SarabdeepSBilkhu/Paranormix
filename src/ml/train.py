@@ -14,7 +14,7 @@ from sklearn.metrics import classification_report
 from src.ml.preprocessing import lemmatize_tokenizer
 from sklearn.calibration import CalibratedClassifierCV
 
-PROCESSED_DATA_PATH = os.path.join("data", "processed", "creepypasta", "train.json")
+PROCESSED_DATA_PATH = os.path.join("data", "processed", "train.json")
 MODEL_DIR = os.path.join("models")
 os.makedirs(MODEL_DIR, exist_ok=True)
 
