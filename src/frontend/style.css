@@ -239,12 +239,23 @@ body {
   align-items: center;
   gap: 10px;
 }
+.bar-row.dimmed {
+  opacity: 0.4;
+  filter: grayscale(0.5);
+}
 .bar-lbl {
   font-family: var(--font-mono);
   font-size: 0.65rem;
-  width: 100px;
+  width: 140px;
   text-transform: uppercase;
   color: var(--text-dim);
+  white-space: nowrap;
+}
+.label-overridden {
+  font-size: 0.55rem;
+  opacity: 0.8;
+  margin-left: 4px;
+  font-style: italic;
 }
 .bar-out {
   flex: 1;

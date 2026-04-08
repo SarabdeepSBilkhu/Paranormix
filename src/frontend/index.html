@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Paranormix | Diagnostic Terminal</title>
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=4.1.2" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
 </head>
 <body>
@@ -12,6 +12,7 @@
         <header class="main-header">
             <div class="brand">
                 <span class="logo-text">PARANORMIX</span>
+                <span class="label-mono" style="font-size: 10px; opacity: 0.5; margin-left: 10px;">V4.1.2</span>
             </div>
             <div class="header-metadata mono" id="sessionHeader">
                 <!-- Session Metadata injected here -->
@@ -73,7 +74,7 @@
             <div class="axial-section core-report">
                 <div class="metric-row">
                     <div class="metric-block">
-                        <span class="label-mono">PRIMARY DIAGNOSIS</span>
+                        <span class="label-mono">CLASSIFICATION</span>
                         <h1 id="dashPrediction" class="prediction-text">UNDETERMINED</h1>
                     </div>
                     <div class="metric-block align-right">
@@ -81,35 +82,31 @@
                         <div id="dashBand" class="band-indicator">--</div>
                     </div>
                 </div>
-                <div class="stability-text mono" id="dashStability">
-                    Awaiting stability calculation...
+                <div class="stability-text mono" id="dashConfidence">
+                    Awaiting analysis...
                 </div>
             </div>
 
-            <!-- Section 2: Distribution -->
+            <!-- Section 2: Signal Flags -->
             <div class="axial-section">
-                <h3 class="section-title mono">CLASS PROBABILITY DISTRIBUTION</h3>
-                <div class="chart-box" id="chartClassScore"></div>
+                <h3 class="section-title mono">SIGNAL FLAGS</h3>
+                <div class="chart-box" id="signalFlags"></div>
             </div>
 
-            <!-- Section 3: Ranked Matches -->
+            <!-- Section 3: Evidence -->
             <div class="axial-section">
-                <h3 class="section-title mono">COMPETING AXES / RESOLUTION</h3>
-                <div id="rankedMatches" class="ranked-list mono">
-                    <!-- Ranked items injected here -->
+                <h3 class="section-title mono">DETECTED EVIDENCE</h3>
+                <div id="evidenceList" class="ranked-list mono">
+                    <!-- Evidence items injected here -->
                 </div>
             </div>
 
-            <!-- Section 4: Grouped Signals -->
+            <!-- Section 4: Precedence Info -->
             <div class="axial-section">
-                <h3 class="section-title mono">DETECTED SIGNALS</h3>
+                <h3 class="section-title mono">PRECEDENCE RESOLUTION</h3>
                 <div class="signal-group">
-                    <h4 class="mono small">OBSERVED PATTERNS</h4>
-                    <ul id="observedSignals" class="signal-list"></ul>
-                </div>
-                <div class="signal-group">
-                    <h4 class="mono small">ABSENT INDICATORS</h4>
-                    <ul id="absentSignals" class="signal-list negative"></ul>
+                    <h4 class="mono small">IGNORED SIGNALS (lower precedence)</h4>
+                    <ul id="ignoredSignals" class="signal-list negative"></ul>
                 </div>
             </div>
             
@@ -119,6 +116,6 @@
         </div>
     </template>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=4.1.2"></script>
 </body>
 </html>

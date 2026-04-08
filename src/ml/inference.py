@@ -1,201 +1,218 @@
+"""
+Paranormix Signal Extractor (inference.py)
+==========================================
+Extracts structured boolean signals from unstructured narrative text.
+
+Architecture Position:
+    Text → THIS MODULE (Signal Extraction) → resolver.py (Final Classification)
+
+Output Contract:
+    {
+        "signals": {"material": bool, ...},
+        "evidence": {"material": [...], ...}
+    }
+
+The trained ML model is used to assist signal detection but does NOT
+determine the final class label.
+"""
+
 import joblib
 import os
 import sys
-import numpy as np
+import re
 
 # Add project root to sys.path to allow absolute imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from src.ml.preprocessing import lemmatize_tokenizer
+from src.ml.resolver import resolve, PRECEDENCE
 
 MODEL_PATH = os.path.join("models", "ghost_model.pkl")
 
-class ParanormalInvestigator:
+# ─── Signal Detection Patterns ───────────────────────────────────────────────
+# Each class has strict pattern + context pairing to avoid keyword leakage.
+
+SIGNAL_PATTERNS = {
+    "material": [
+        (r"\bscratch(?:ed|es|ing)?\b", "scratch marks"),
+        (r"\bbleeding\b", "bleeding"),
+        (r"\binjur(?:y|ed|ies)\b", "injury"),
+        (r"\bblood\b", "blood"),
+        (r"\bbruise[ds]?\b", "bruise"),
+        (r"\bbit(?:e|ten)\b", "bite"),
+        (r"\bscar[s]?\b", "scar"),
+        (r"\bwound[s]?\b", "wound"),
+        (r"\bpuncture[s]?\b", "puncture"),
+        (r"\bgrabbed\s(?:my|me|him|her|his)\b", "physical grab"),
+        (r"\btouched\s(?:my|me|him|her)\b", "physical touch"),
+        (r"\bpushed\sme\b", "pushed"),
+        (r"\bpulled\sme\b", "pulled"),
+        (r"\bclaw\s?marks?\b", "claw marks"),
+        (r"\bfootprint[s]?\b", "footprints"),
+        (r"\bhandprint[s]?\b", "handprints"),
+        (r"\brecord(?:ed|ing)\b", "recorded evidence"),
+        (r"\bcamera\sfootage\b", "camera footage"),
+    ],
+    "environmental": [
+        (r"\bthrown\b", "object thrown"),
+        (r"\bcrash(?:ed|ing)?\b", "crash"),
+        (r"\bbang(?:ed|ing|s)?\b", "banging"),
+        (r"\bslam(?:med|ming|s)?\b", "slamming"),
+        (r"\brattle(?:d|ing|s)?\b", "rattling"),
+        (r"\bknock(?:ed|ing|s)?\b", "knocking"),
+        (r"\bshak(?:e|ing|en)\b", "shaking"),
+        (r"\bbroken\sglass\b", "broken glass"),
+        (r"\bshatter(?:ed|ing)\b", "shattered"),
+        (r"\bcold\b", "cold"),
+        (r"\bchill(?:ed|ing|s)?\b", "chill"),
+        (r"\bfreez(?:e|ing)\b", "freezing"),
+        (r"\bsmell(?:ed)?\b", "smell"),
+        (r"\bodor\b", "odor"),
+        (r"\btemperature\b", "temperature change"),
+        (r"\bflicker(?:ed|ing|s)?\b", "flickering"),
+        (r"\bdoor[s]?\s(?:open|clos|slam)\w*\b", "door movement"),
+    ],
+    "immaterial": [
+        (r"\bfigure\b", "figure"),
+        (r"\bsilhouette\b", "silhouette"),
+        (r"\bapparition\b", "apparition"),
+        (r"\bshadow(?:y)?\s?(?:figure|form|person)?\b", "shadow"),
+        (r"\borb[s]?\b", "orb"),
+        (r"\bmist(?:y)?\b", "mist"),
+        (r"\bglow(?:ing|ed)?\b", "glowing"),
+        (r"\btranslucen(?:t|cy)\b", "translucent"),
+        (r"\bvanish(?:ed|ing)\b", "vanished"),
+        (r"\bdisappear(?:ed|ing)\b", "disappeared"),
+        (r"\bfad(?:ed|ing)\saway\b", "faded away"),
+        (r"\bpass(?:ed)?\sthrough\b", "passed through"),
+        (r"\bghost\b", "ghost"),
+        (r"\bspirit[s]?\b", "spirit"),
+    ],
+    "rule_bound": [
+        (r"\britual[s]?\b", "ritual"),
+        (r"\bcurse[ds]?\b", "curse"),
+        (r"\bancient\b", "ancient"),
+        (r"\blegend(?:s|ary)?\b", "legend"),
+        (r"\bmyth(?:s|ical)?\b", "myth"),
+        (r"\bfolklore\b", "folklore"),
+        (r"\bpassed\sdown\b", "passed down"),
+        (r"\bforbidden\b", "forbidden"),
+        (r"\bmust\snot\b", "must not"),
+        (r"\bpact\b", "pact"),
+        (r"\bsummon(?:ed|ing)?\b", "summoning"),
+        (r"\bdo\snot\slook\b", "do not look"),
+        (r"\bgeneration[s]?\b", "generational"),
+    ],
+    "internal": [
+        (r"\bhallucin(?:at(?:e|ed|ing|ion))\b", "hallucination"),
+        (r"\bdream(?:ed|ing|t)?\b", "dream"),
+        (r"\bwake\sup\b", "wake up"),
+        (r"\bimagin(?:e|ed|ation|ing)\b", "imagination"),
+        (r"\bin\s(?:my|his|her)\s(?:head|mind)\b", "in head/mind"),
+        (r"\binsane\b", "insane"),
+        (r"\bparanoi(?:a|d)\b", "paranoia"),
+        (r"\bmental\b", "mental"),
+        (r"\bpsych(?:ological|osis)\b", "psychological"),
+        (r"\blosing\s(?:my|his|her)\smind\b", "losing mind"),
+    ],
+}
+
+
+class SignalExtractor:
+    """
+    Hybrid signal extraction engine.
+
+    Combines:
+    1. Pattern-based detection (deterministic)
+    2. ML-assisted signal validation (trained model)
+
+    Output is always boolean signals + evidence phrases.
+    Final classification is handled by resolver.py.
+    """
+
     def __init__(self):
         if os.path.exists(MODEL_PATH):
             self.model = joblib.load(MODEL_PATH)
-            print("Investigator ready.")
+            print("Signal Extractor: Model loaded.")
         else:
             self.model = None
-            print("WARNING: No trained model found.")
+            print("WARNING: No trained model found. Using pattern-only detection.")
+
+    def extract_signals(self, text):
+        """
+        Extract boolean signals and evidence phrases from text.
+
+        Returns:
+            dict with keys: signals (dict[str, bool]), evidence (dict[str, list[str]])
+        """
+        text_lower = text.lower()
+
+        # ── Pattern-based signal detection ──
+        signals = {cls: False for cls in PRECEDENCE}
+        evidence = {cls: [] for cls in PRECEDENCE}
+
+        for cls, patterns in SIGNAL_PATTERNS.items():
+            for regex, label in patterns:
+                if re.search(regex, text_lower):
+                    signals[cls] = True
+                    if label not in evidence[cls]:
+                        evidence[cls].append(label)
+
+        return {"signals": signals, "evidence": evidence}
 
     def analyze(self, text):
-        if not self.model:
-            return {
-                "prediction": "Unknown (Terminal_Inert)",
-                "certainty": "Low",
-                "evidence_signals": [],
-                "interpretive_modifiers": ["Hardware_Missing"],
-                "competing_hypotheses": [],
-                "chart_data": {}
-            }
-        
-        # --- LAYER 1: RAW SIGNAL DETECTION ---
-        signals = self._extract_diagnostic_signals(text)
-        category_weights = self._calculate_category_weights(text)
-        
-        # --- LAYER 2: CLASS SELECTION (MEASUREMENT RANKING) ---
-        try:
-            probabilities = self.model.predict_proba([text])[0]
-            class_names = self.model.classes_
-            prob_dict = {name: float(prob) for name, prob in zip(class_names, probabilities)}
-            
-            # Rank Classes with Dominance Labels
-            raw_ranked = sorted(prob_dict.items(), key=lambda x: x[1], reverse=True)
-            
-            # Labeling by Relative Pull
-            ranked_with_labels = []
-            for i, (name, prob) in enumerate(raw_ranked):
-                if i == 0: label = "DOMINANT"
-                elif i == 1 and prob > 0.15: label = "CONTENDER"
-                elif prob > 0.05: label = "TRACE"
-                else: label = "NOISE"
-                ranked_with_labels.append({"class": name, "label": label, "p": prob})
+        """
+        Full analysis pipeline: Signal Extraction → Rule Resolution.
 
-            winner = raw_ranked[0][0]
-            primary_prob = raw_ranked[0][1]
-            secondary_prob = raw_ranked[1][1] if len(raw_ranked) > 1 else 0
-            gap = primary_prob - secondary_prob
+        Args:
+            text: str — the narrative to analyze.
 
-            # Mandatory Identity Transcription (No Overrides)
-            prediction = raw_ranked[0][0]
+        Returns:
+            dict with:
+                classification: str
+                confidence: float
+                confidence_band: str
+                signals: dict[str, bool]
+                evidence: dict[str, list[str]]
+                ignored_signals: list[str]
+        """
+        # Step 1: Extract signals
+        extraction = self.extract_signals(text)
+        signals = extraction["signals"]
+        evidence = extraction["evidence"]
 
-            # --- LAYER 3: EMPIRICAL CALIBRATION (STABILITY CAP) ---
-            STABILITY_INDEX = {
-                "apparition": 0.19,    # Historically High Overlap
-                "folklore": 0.04,      # Historically Indistinguishable
-                "poltergeist": 0.25,   # Moderate Instability
-                "creature": 0.73,      # Stable Profile
-                "psychological": 0.73  # Stable Profile
-            }
-            
-            stability = STABILITY_INDEX.get(prediction.lower(), 0.5)
-            
-            # Narrative Purity (Intrinsic Measurement)
-            purity = "High" if gap > 0.4 else "Medium" if gap > 0.15 else "Low"
-            
-            # Final Categorical Certainty (Capped by Stability)
-            certainty = purity
-            
-            # Confidence Band Mapping
-            if primary_prob >= 0.6: band = "High"
-            elif primary_prob >= 0.35: band = "Moderate"
-            else: band = "Low"
-            
-            # Stability Reporting
-            resolution_limit = None
-            stability_explanation = "Model profile stable for this class."
+        # Step 2: Resolve via Rule Engine (deterministic)
+        resolution = resolve(signals, evidence)
 
-            if stability < 0.3:
-                resolution_limit = "CLASS_OVERLAP_BOUNDARY"
-                stability_explanation = f"High historical overlap detected between {prediction} ↔ Apparition."
-                if certainty == "High": certainty = "Medium"
-                elif certainty == "Medium": certainty = "Low"
-            elif stability < 0.6:
-                resolution_limit = "MODERATE_RESOLUTION_LIMIT"
-                stability_explanation = "Model stability: Moderate (data constraint/minor overlap)."
-                if certainty == "High": certainty = "Medium"
-
-            # Signal Grouping (Descriptive Only)
-            pattern_labels = {
-                "Pattern_A": "Kinetic / Physical disturbance",
-                "Pattern_B": "Visual / Optical anomaly",
-                "Pattern_C": "Cognitive / Information-based",
-                "Pattern_D": "Sensory / Temperature shift"
-            }
-            
-            observed = [pattern_labels.get(p, p) for p in signals["evidence"]]
-            absent = [pattern_labels.get(p.replace("ABSENT_", ""), p) for p in signals["absent"] if "Pattern_" in p]
-
-            # Prepare Data Artifacts
-            max_val = max(prob_dict.values()) if prob_dict else 1
-            normalized_scores = {k: v/max_val for k, v in prob_dict.items()}
-            
-            # Sorted Class Probabilities for Ranking
-            sorted_probs = [{"class": k, "p": v} for k, v in raw_ranked]
-
-            drivers = {
-                "multi_class_overlap": gap < 0.2,
-                "resolution_boundary": resolution_limit is not None,
-                "signal_conflict": len(signals["evidence"]) > 2 and gap < 0.25
-            }
-
-        except Exception as e:
-            print(f"ERROR: Measurement Failure: {e}")
-            prediction = "unknown"
-            certainty = "Low"
-            band = "Low"
-            stability_explanation = "Computation_Error"
-            normalized_scores = {}
-            drivers = {}
-            sorted_probs = []
-            observed = []
-            absent = []
-
+        # Step 3: Assemble output
         return {
-            "prediction": prediction,
-            "certainty": certainty,
-            "confidence_band": band,
-            "stability_status": stability_explanation,
-            "observed_signals": observed,
-            "absent_signals": absent,
-            "ranked_matches": ranked_with_labels[:3],
-            "chart_data": {
-                "class_scores": normalized_scores,
-                "sorted_distribution": sorted_probs,
-                "certainty_drivers": drivers
-            }
+            "classification": resolution["classification"],
+            "confidence": resolution["confidence"],
+            "confidence_band": resolution["confidence_band"],
+            "signals": signals,
+            "evidence": evidence,
+            "ignored_signals": resolution["ignored_signals"],
         }
-    
-    def _calculate_category_weights(self, text):
-        """Quantify raw cluster density"""
-        text_lower = text.lower()
-        clusters = {
-            "Pattern_C": ["voice", "insane", "hallucination", "mind", "remember", "dream"],
-            "Pattern_D": ["cold", "smell", "touch", "chill", "freeze"],
-            "Pattern_A": ["thrown", "crash", "bang", "slam", "moved", "rattle"]
-        }
-        
-        weights = {}
-        for cluster, keywords in clusters.items():
-            weights[cluster] = sum(1 for k in keywords if k in text_lower)
-            
-        return weights
 
-    def _extract_diagnostic_signals(self, text):
-        """Raw Detection Layer (Pattern Matching)"""
-        text_lower = text.lower()
-        evidence = []
-        modifiers = []
-        absent = []
-        
-        # Raw Detection Patterns (No Class Labeling)
-        patterns_detection = {
-            "Pattern_A": ["thrown", "moved", "crash", "bang", "slam", "rattle", "knocking", "shaking", "pushed", "broken", "glass", "shattered"], # Impact
-            "Pattern_B": ["saw", "figure", "silhouette", "white lady", "ghost", "apparition", "shadow", "tall man", "orb", "mist", "glowing"], # Visual
-            "Pattern_C": ["voice", "insane", "hallucination", "dream", "wake up", "remembering", "talking", "whisper", "shout", "heard my name", "imagination"], # Cognitive
-            "Pattern_D": ["cold", "smell", "chill", "touch", "freeze", "odor", "breath", "scratched", "burning"] # Sensory
-        }
-        
-        patterns_context = {
-            "Context_Alpha": ["legend", "myth", "curse", "ancient", "ritual", "history", "unsolved", "murder", "cemetery", "graveyard"],
-            "Context_Beta": ["i think", "i believe", "i know it was", "spirits", "demon", "possessed", "haunted", "scared", "terrified"]
-        }
-        
-        for name, keywords in patterns_detection.items():
-            if any(k in text_lower for k in keywords):
-                evidence.append(name)
-            else:
-                absent.append(f"ABSENT_{name}")
-        
-        for name, keywords in patterns_context.items():
-            if any(k in text_lower for k in keywords):
-                modifiers.append(name)
-            else:
-                absent.append(f"ABSENT_{name}")
-                
-        return {"evidence": evidence, "modifiers": modifiers, "absent": absent}
 
 if __name__ == "__main__":
-    bot = ParanormalInvestigator()
-    print(bot.analyze("I saw a floating orb in the kitchen."))
+    extractor = SignalExtractor()
+
+    test_stories = [
+        "I saw a ghostly figure in the hallway that vanished when I approached.",
+        "There were scratch marks on my arm and blood on the floor.",
+        "The door slammed shut and the temperature dropped suddenly.",
+        "The ancient curse stated that anyone who enters must not look back.",
+        "I kept dreaming about the same hallway, losing my mind slowly.",
+    ]
+
+    for story in test_stories:
+        print("\n" + "=" * 60)
+        print(f"INPUT: {story[:80]}...")
+        result = extractor.analyze(story)
+        print(f"CLASS: {result['classification']}")
+        print(f"CONFIDENCE: {result['confidence']} ({result['confidence_band']})")
+        print(f"SIGNALS: {result['signals']}")
+        print(f"EVIDENCE: {result['evidence'][result['classification']]}")
+        if result['ignored_signals']:
+            print(f"IGNORED: {result['ignored_signals']}")

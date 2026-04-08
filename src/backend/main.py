@@ -1,3 +1,17 @@
+"""
+Paranormix FastAPI Backend (main.py)
+====================================
+Hybrid Explainable AI System combining ML-based signal extraction
+with deterministic rule-based classification.
+
+Architecture:
+    Text → ML Signal Extractor → Rule Engine (Resolver) → FastAPI → LLM Analyst
+
+Endpoints:
+    POST /analyze  → Structured classification + signals + confidence
+    POST /chat     → Conversational analyst (LLM-powered explanation)
+"""
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,10 +31,10 @@ load_dotenv()
 # Add src to path so we can import ml modules
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.ml.inference import ParanormalInvestigator
+from src.ml.inference import SignalExtractor
 from src.backend.session_store import session_store
 
-app = FastAPI(title="Paranormix - AI Investigator", version="3.0.0")
+app = FastAPI(title="Paranormix — Hybrid XAI System", version="4.0.0")
 
 # CORS
 app.add_middleware(
@@ -31,10 +45,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Investigator
-investigator = ParanormalInvestigator()
+# Initialize Signal Extractor (ML + Pattern Engine)
+extractor = SignalExtractor()
 
-# Initialize Generative AI
+# Initialize Generative AI (LLM Analyst Layer)
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 if GROQ_API_KEY:
     client = Groq(api_key=GROQ_API_KEY)
@@ -43,93 +57,170 @@ else:
     client = None
     print("WARNING: GROQ_API_KEY not found. Chat functionality will be disabled.")
 
-# System prompt for analyst chat
-SYSTEM_PROMPT = """You are the Paranormix Technical Analyst. Your role is to help researchers understand the system's Machine Learning diagnostics through clear, natural, and professional dialogue.
+# ─── System Prompt (Deterministic Analyst) ────────────────────────────────────
+SYSTEM_PROMPT = """You are the Paranormix Technical Analyst. Your role is to explain the system's deterministic classification output clearly, completely, and in natural language.
+
+CLASSIFICATION SYSTEM:
+The system uses five mutually exclusive signal classes resolved by absolute precedence:
+  1. material — direct physical evidence (injury, marks, biological residue)
+  2. environmental — object/environment manipulation (movement, sound, temperature)
+  3. immaterial — visual presence without physical interaction
+  4. rule_bound — causation governed by rules, rituals, or constraints
+  5. internal — cognitive/mental states with no external validation
+
+PRECEDENCE RULE:
+material > environmental > immaterial > rule_bound > internal
+If a higher-tier signal is detected, all lower-tier signals are IGNORED for classification.
+There is NO overlap between classes. Every narrative maps to exactly one class.
 
 ANALYST PROTOCOL:
-1. Natural Persona: Speak like a human technical expert, not a terminal. Avoid prefixing responses with robotic headers like "DIAGNOSTIC AXIAL CAPTURE CONFIRMED."
-2. Narrative Integration: Instead of listing raw data points (e.g., "Confidence: Moderate"), weave the information into your explanation (e.g., "The system is suggesting a moderate degree of confidence in this result...").
-3. Avoid Meta-Talk: Never say "The system has identified" or "The data indicates." Just speak directly about the findings (e.g., "The patterns here align most closely with...").
-4. Technical Clarity: Translate technical concepts into clear, grounded language. If stability is high, explain it as a consistent match with known profiles rather than citing a "Stability Index."
-5. Progressive Disclosure:
-   - Initial Turn: Confirm the analysis is complete, share the primary result and its reliability band in a natural sentence, and invite specific questions.
-   - Follow-up: Dive into specific signals only when asked, maintaining an explanatory rather than descriptive tone.
+1. Natural Persona: Speak like a human technical expert. Avoid robotic formatting.
+2. Causal Explanation: Explain WHY the class was chosen based on detected evidence.
+3. Precedence Transparency: If multiple signals were detected, explicitly acknowledge all of them. Explain that while multiple patterns exist, one was selected based on absolute precedence (e.g., "multiple signals detected; environmental selected due to precedence").
+4. Deterministic Grounding: Every statement must be directly supported by the diagnostic data.
+5. No Speculation: Do not introduce information beyond what the diagnostic provides.
 
 STRICT CONSTRAINTS:
-- No emojis, robotic flair, or block-text data dumps.
-- Never contradict the DOMINANT class reported in the diagnostic reference.
-- Maintain a tone that is professional, neutral, and helpful, but distinctly human.
+- Do not say "only X was detected" if the diagnostic shows multiple signals.
+- Do not ask follow-up questions under any circumstance.
+- Do not suggest "overlap" or "ambiguity" between classes.
+- Do not use terms like "contender", "trace", or "competing hypothesis".
+- Use "primary signal detected" and "secondary signals ignored due to precedence".
+- Confidence reflects evidence quality, not statistical likelihood.
+- Each response must be complete and final.
+- Maintain a neutral, professional, and non-speculative tone at all times.
 """
+
+
+# ─── Request/Response Models ─────────────────────────────────────────────────
+class AnalyzeInput(BaseModel):
+    text: str
 
 class ChatInput(BaseModel):
     session_id: Optional[str] = None
     user_message: str
 
+
+# ─── Routes ──────────────────────────────────────────────────────────────────
+
 @app.get("/")
 async def root(request: Request):
-    # Redirect to the frontend app
     return RedirectResponse(url="/app/")
+
+
+@app.post("/analyze")
+async def analyze(input_data: AnalyzeInput):
+    """
+    Structured classification endpoint.
+    Returns: classification, confidence, signals, evidence, ignored_signals.
+    """
+    if len(input_data.text) < 50:
+        raise HTTPException(
+            status_code=400,
+            detail="Input insufficient. Narrative must be at least 50 characters."
+        )
+
+    try:
+        result = extractor.analyze(input_data.text)
+        return {
+            "classification": result["classification"],
+            "confidence": result["confidence"],
+            "confidence_band": result["confidence_band"],
+            "signals": result["signals"],
+            "evidence": result["evidence"],
+            "ignored_signals": result["ignored_signals"],
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
 
 @app.post("/chat")
 async def chat(input_data: ChatInput):
-    """Unified conversational analyst endpoint for narrative diagnostic decoding."""
+    """Conversational analyst endpoint — wraps analysis in LLM-powered explanation."""
     if not client:
         raise HTTPException(
-            status_code=503, 
+            status_code=503,
             detail="Analyst functionality unavailable. API configuration missing."
         )
 
     session_id = input_data.session_id
     is_initial_analysis = False
-    now = __import__("datetime").datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # Detection: Initial submission vs Follow-up
     if not session_id:
         if len(input_data.user_message) < 50:
             return {
-                "response": "Input insufficient. Narrative must be at least 50 characters for axial analysis.",
+                "response": "Input insufficient. Narrative must be at least 50 characters for analysis.",
                 "session_id": None
             }
-        
-        # Trigger ML Analysis
+
+        # Trigger Signal Extraction + Rule Resolution
         try:
-            result = investigator.analyze(input_data.user_message)
+            result = extractor.analyze(input_data.user_message)
             session_id = str(uuid.uuid4())
+
+            # Build evidence summary for session
+            primary_evidence = result["evidence"].get(result["classification"], [])
+            ignored = result.get("ignored_signals", [])
+
             session_store.create_session(
                 session_id=session_id,
                 narrative=input_data.user_message,
-                prediction=result["prediction"],
-                certainty=result["certainty"],
-                evidence=result.get("observed_signals", []),
-                modifiers=[], # Legacy
-                competing=[h['class'] for h in result.get("ranked_matches", []) if h['label'] != 'DOMINANT'],
-                chart_data=result["chart_data"]
+                prediction=result["classification"],
+                certainty=result["confidence_band"],
+                evidence=primary_evidence,
+                modifiers=[],
+                competing=ignored,
+                chart_data={
+                    "signals": result["signals"],
+                    "evidence": result["evidence"],
+                    "confidence": result["confidence"],
+                }
             )
 
-            # Store additional metadata locally in session
+            # Store additional metadata
             session = session_store.get_session(session_id)
             session['report_time'] = now
             session['word_count'] = len(input_data.user_message.split())
-            session['band'] = result.get("confidence_band", "Low")
-            session['stability'] = result.get("stability_status", "Unknown")
-            session['absent'] = result.get("absent_signals", [])
-            session['ranked_matches_raw'] = result.get("ranked_matches", [])
+            session['band'] = result["confidence_band"]
+            session['confidence_score'] = result["confidence"]
+            session['ignored_signals'] = ignored
+            session['all_evidence'] = result["evidence"]
 
-            # Initialize history with the story and hidden diagnostic report
+            # Build diagnostic context for LLM
             session_store.append_message(session_id, "user", f"SUBJECT NARRATIVE: {input_data.user_message}")
-            report_context = f"""DIAGNOSTIC AXIAL CAPTURE [{now}]:
-PRIMARY_DIAGNOSIS: {result['prediction']}
-CONFIDENCE_BAND: {result['confidence_band']}
-STABILITY_INDEX: {result['stability_status']}
 
-EMPIRICAL SIGNALS:
-- OBSERVED: {', '.join(result.get('observed_signals', ['None']))}
-- ABSENT: {', '.join(result.get('absent_signals', ['None']))}
+            # Format ignored signals explanation
+            ignored_explanation = ""
+            if ignored:
+                ignored_details = []
+                for sig in ignored:
+                    ev = result["evidence"].get(sig, [])
+                    if ev:
+                        ignored_details.append(f"  - {sig}: {', '.join(ev)} (IGNORED — lower precedence)")
+                if ignored_details:
+                    ignored_explanation = "\nIGNORED SIGNALS (lower precedence):\n" + "\n".join(ignored_details)
 
-DISTRIBUTION_METRICS:
-{chr(10).join([f"{h['class']}: {h['p']:.2%} ({h['label']})" for h in result.get('ranked_matches', [])])}
+            report_context = f"""DIAGNOSTIC REPORT [{now}]:
+CLASSIFICATION: {result['classification']}
+CONFIDENCE: {result['confidence']} ({result['confidence_band']})
 
-PROTOCOL: Confirm results on turn 1. Use details to answer specific follow-up questions only.
+PRIMARY EVIDENCE ({result['classification']}):
+  {', '.join(primary_evidence) if primary_evidence else 'Default fallback (no external signals)'}
+{ignored_explanation}
+
+SIGNAL FLAGS:
+  material: {result['signals']['material']}
+  environmental: {result['signals']['environmental']}
+  immaterial: {result['signals']['immaterial']}
+  rule_bound: {result['signals']['rule_bound']}
+  internal: {result['signals']['internal']}
+
+PRECEDENCE: material > environmental > immaterial > rule_bound > internal
+PROTOCOL: Explain the classification deterministically. State which signals were detected and why the final class was chosen. If lower signals were ignored, explain precedence.
 """
             session_store.append_message(session_id, "system", report_context)
             is_initial_analysis = True
@@ -166,7 +257,7 @@ PROTOCOL: Confirm results on turn 1. Use details to answer specific follow-up qu
             model="llama-3.1-8b-instant",
             messages=llm_messages,
             max_tokens=400,
-            temperature=0.0 # Extreme grounding for research validity
+            temperature=0.0
         )
 
         bot_response = response.choices[0].message.content
@@ -178,23 +269,22 @@ PROTOCOL: Confirm results on turn 1. Use details to answer specific follow-up qu
             "session_id": session_id,
             "is_initial": is_initial_analysis,
             "ml_data": {
-                "prediction": session['prediction'],
-                "certainty": session['certainty'],
-                "band": session.get('band'),
-                "stability": session.get('stability'),
-                "observed": session['evidence'],
-                "absent": session.get('absent'),
-                "ranked_matches": session.get('ranked_matches_raw', []),
-                "chart_data": session['chart_data'],
+                "classification": session.get('prediction', 'internal'),
+                "confidence": session.get('confidence_score', 0),
+                "confidence_band": session.get('band', 'Low'),
+                "evidence": session.get('chart_data', {}).get('evidence', {}),
+                "ignored_signals": session.get('ignored_signals', []),
+                "signals": session.get('chart_data', {}).get('signals', {}),
                 "metadata": {
-                    "timestamp": session.get('report_time'),
-                    "words": session.get('word_count'),
-                    "version": "3.0.1-research"
+                    "timestamp": session.get('report_time', now),
+                    "words": session.get('word_count', 0),
+                    "version": "4.1.2-xai"
                 }
             } if is_initial_analysis else None
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Groq API error: {str(e)}")
+
 
 # Mount frontend
 frontend_path = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'frontend'))

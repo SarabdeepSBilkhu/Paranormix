@@ -1,9 +1,11 @@
 /**
- * Paranormix - XAI Diagnostic Suite V3
- * Research Terminal Implementation
+ * Paranormix — XAI Diagnostic Suite V4
+ * Version: 4.1.2 — Deterministic Classification Terminal
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("XAI Terminal V4.1.2 Initializing...");
+
     // Structural Elements
     const chatContainer = document.getElementById('chatContainer');
     const diagnosticDashboard = document.getElementById('diagnosticDashboard');
@@ -46,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
-                throw new Error(errData.detail || `AXIAL_FAILURE: ${response.status}`);
+                throw new Error(errData.detail || `SYSTEM_FAILURE: ${response.status}`);
             }
 
             const data = await response.json();
@@ -54,9 +56,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.session_id) sessionId = data.session_id;
 
             if (isInitial && data.ml_data) {
-                renderDashboard(data.ml_data);
-                updateSessionMetadata(data.ml_data);
-                renderPrompts(data.ml_data);
+                try {
+                    renderDashboard(data.ml_data);
+                    updateSessionMetadata(data.ml_data);
+                    renderPrompts(data.ml_data);
+                } catch (renderError) {
+                    console.error("Layout Rendering Failure:", renderError);
+                    console.log("Faulty mlData state:", JSON.stringify(data.ml_data));
+                    throw new Error("UI Component Error during axial mapping. Check console for trace.");
+                }
             }
 
             appendMessage('ai', data.response);
@@ -68,97 +76,140 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Research Rendering ---
+    // --- XAI Dashboard Rendering ---
 
     function renderDashboard(mlData) {
+        if (!mlData) {
+            console.error("Dashboard invoked with null mlData.");
+            return;
+        }
+
         const mainGrid = document.getElementById('mainGrid');
-        mainGrid.classList.add('axial-active');
+        if (mainGrid) mainGrid.classList.add('axial-active');
         
         diagnosticDashboard.innerHTML = '';
         
         const report = dashboardTemplate.content.cloneNode(true);
-        const charts = mlData.chart_data;
 
-        // 1. Core Output & Stability
-        report.getElementById('dashPrediction').textContent = mlData.prediction;
-        const band = report.getElementById('dashBand');
-        band.textContent = mlData.band.toUpperCase();
-        band.className = `band-indicator band-${mlData.band.toLowerCase()}`;
-        report.getElementById('dashStability').textContent = mlData.stability;
+        // 1. Core Output: Classification & Confidence (Strict Safety Wrappers)
+        const classification = String(mlData.classification || 'internal');
+        const confidenceBand = String(mlData.confidence_band || 'Low');
+        const confidenceScore = Number(mlData.confidence || 0);
 
-        // 2. Class Distribution (Sorted)
-        const scoreContainer = report.getElementById('chartClassScore');
-        const sortedDist = charts.sorted_distribution || [];
-        sortedDist.forEach(item => {
-            const row = document.createElement('div');
-            row.className = 'bar-row';
-            row.innerHTML = `
-                <div class="bar-lbl">${item.class}</div>
-                <div class="bar-out"><div class="bar-in" style="width: ${item.p * 100}%"></div></div>
-            `;
-            scoreContainer.appendChild(row);
-        });
-
-        // 3. Ranked Matches
-        const rankContainer = report.getElementById('rankedMatches');
-        const rankedMatches = mlData.ranked_matches || [];
-        rankedMatches.forEach(match => {
-            const div = document.createElement('div');
-            div.className = 'rank-item';
-            div.innerHTML = `
-                <span>${match.class.toUpperCase()}</span>
-                <span class="rank-tag">${match.label} (${(match.p * 100).toFixed(1)}%)</span>
-            `;
-            rankContainer.appendChild(div);
-        });
-
-        // 4. Grouped Signals
-        const observedList = report.getElementById('observedSignals');
-        if (mlData.observed.length > 0) {
-            mlData.observed.forEach(sig => {
-                const li = document.createElement('li');
-                li.textContent = sig;
-                observedList.appendChild(li);
-            });
-        } else {
-            observedList.innerHTML = '<li style="background:none; border:none; opacity:0.5; font-style:italic;">No significant patterns detected in current axial capture.</li>';
+        const predictionElem = report.getElementById('dashPrediction');
+        if (predictionElem) predictionElem.textContent = classification.toUpperCase();
+        
+        const bandElem = report.getElementById('dashBand');
+        if (bandElem) {
+            bandElem.textContent = confidenceBand.toUpperCase();
+            bandElem.className = `band-indicator band-${confidenceBand.toLowerCase()}`;
         }
 
-        const absentList = report.getElementById('absentSignals');
-        mlData.absent.forEach(sig => {
-            const li = document.createElement('li');
-            li.textContent = sig;
-            absentList.appendChild(li);
+        const confidenceElem = report.getElementById('dashConfidence');
+        if (confidenceElem) {
+            confidenceElem.textContent = 
+                `Confidence: ${(confidenceScore * 100).toFixed(0)}% — Evidence-based (deterministic)`;
+        }
+
+        // 2. Signal Flags (boolean indicators)
+        const flagContainer = report.getElementById('signalFlags');
+        const signals = mlData.signals || {};
+        const precedenceOrder = ['material', 'environmental', 'immaterial', 'rule_bound', 'internal'];
+        
+        precedenceOrder.forEach(cls => {
+            const clsString = String(cls);
+            const detected = signals[clsString] === true;
+            const isWinner = clsString === classification;
+            const isOverridden = detected && !isWinner;
+            
+            const row = document.createElement('div');
+            row.className = `bar-row ${isOverridden ? 'dimmed' : ''}`;
+            row.innerHTML = `
+                <div class="bar-lbl">${clsString.toUpperCase()}${isWinner ? ' ★' : ''} ${isOverridden ? '<span class="label-overridden">(overridden)</span>' : ''}</div>
+                <div class="bar-out">
+                    <div class="bar-in" style="width: ${detected ? 100 : 0}%; background: ${isWinner ? 'var(--band-high)' : detected ? 'var(--band-moderate)' : 'transparent'}"></div>
+                </div>
+            `;
+            if (flagContainer) flagContainer.appendChild(row);
         });
 
+        // 3. Evidence (extracted phrases per class)
+        const evidenceContainer = report.getElementById('evidenceList');
+        const evidence = mlData.evidence || {};
+        let hasEvidence = false;
+
+        precedenceOrder.forEach(cls => {
+            const clsString = String(cls);
+            const items = Array.isArray(evidence[clsString]) ? evidence[clsString] : [];
+            if (items.length > 0) {
+                hasEvidence = true;
+                const div = document.createElement('div');
+                div.className = 'rank-item';
+                div.innerHTML = `
+                    <span>${clsString.toUpperCase()}</span>
+                    <span class="rank-tag">${items.join(', ')}</span>
+                `;
+                if (evidenceContainer) evidenceContainer.appendChild(div);
+            }
+        });
+
+        if (!hasEvidence && evidenceContainer) {
+            evidenceContainer.innerHTML =
+                '<div class="rank-item" style="opacity:0.5; font-style:italic;">No explicit evidence detected — default fallback to INTERNAL.</div>';
+        }
+
+        // 4. Ignored Signals (precedence override)
+        const ignoredList = report.getElementById('ignoredSignals');
+        const ignored = Array.isArray(mlData.ignored_signals) ? mlData.ignored_signals : [];
+
+        if (ignored.length > 0 && ignoredList) {
+            ignored.forEach(sig => {
+                const sigString = String(sig);
+                const li = document.createElement('li');
+                li.textContent = `${sigString.toUpperCase()} — detected but overridden by ${classification.toUpperCase()}`;
+                ignoredList.appendChild(li);
+            });
+        } else if (ignoredList) {
+            ignoredList.innerHTML =
+                '<li style="background:none; border:none; opacity:0.5; font-style:italic;">No signals overridden. Clean classification.</li>';
+        }
+
         // 5. Audit Details
-        report.getElementById('dashWordCount').textContent = mlData.metadata.words;
+        const wordCountElem = report.getElementById('dashWordCount');
+        if (wordCountElem) {
+            wordCountElem.textContent = mlData.metadata ? mlData.metadata.words : '--';
+        }
 
         diagnosticDashboard.appendChild(report);
     }
 
     function updateSessionMetadata(mlData) {
-        const meta = mlData.metadata;
-        sessionHeader.innerHTML = `
-            <span>SID: ${sessionId.slice(0, 8)}</span> | 
-            <span>AXIS: MULTI</span> | 
-            <span>W: ${meta.words}</span>
-        `;
-        sessionTimestamp.textContent = `TS: ${meta.timestamp}`;
+        const meta = mlData.metadata || {};
+        if (sessionHeader) {
+            sessionHeader.innerHTML = `
+                <span>SID: ${sessionId ? sessionId.slice(0, 8) : '--'}</span> | 
+                <span>MODE: XAI</span> | 
+                <span>W: ${meta.words || '--'}</span>
+            `;
+        }
+        if (sessionTimestamp) {
+            sessionTimestamp.textContent = `TS: ${meta.timestamp || '--'}`;
+        }
     }
 
     function renderPrompts(mlData) {
         clearPrompts();
+        const classification = String(mlData.classification || 'unknown');
+        const ignored = Array.isArray(mlData.ignored_signals) ? mlData.ignored_signals : [];
+
         const prompts = [
-            "What would increase the confidence band?",
-            "Explain the resolution boundary for this case.",
-            "How should I interpret the absent indicators?"
+            "Why was this classification chosen?",
+            "What evidence supports this result?",
+            "How does the precedence system work?"
         ];
-        
-        // Contextual prompt for top contender
-        if (mlData.ranked_matches.length > 1) {
-            const contender = mlData.ranked_matches[1].class;
-            prompts.unshift(`Why is ${contender} a contender?`);
+
+        if (ignored.length > 0) {
+            prompts.unshift(`Why was ${String(ignored[0])} ignored in favor of ${classification}?`);
         }
 
         prompts.forEach(text => {
@@ -169,12 +220,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 userInput.value = text;
                 sendMessage();
             };
-            suggestedPrompts.appendChild(chip);
+            if (suggestedPrompts) suggestedPrompts.appendChild(chip);
         });
     }
 
     function clearPrompts() {
-        suggestedPrompts.innerHTML = '';
+        if (suggestedPrompts) suggestedPrompts.innerHTML = '';
     }
 
     function appendMessage(role, text) {
@@ -192,10 +243,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setLoading(isLoading) {
-        sendBtn.disabled = isLoading;
-        userInput.disabled = isLoading;
-        analystStatus.textContent = isLoading ? 'PROCESSING...' : 'READY';
-        analystStatus.style.color = isLoading ? 'var(--band-low)' : 'var(--band-high)';
+        if (sendBtn) sendBtn.disabled = isLoading;
+        if (userInput) userInput.disabled = isLoading;
+        if (analystStatus) {
+            analystStatus.textContent = isLoading ? 'PROCESSING...' : 'READY';
+            analystStatus.style.color = isLoading ? 'var(--band-low)' : 'var(--band-high)';
+        }
     }
 
     function resetInvestigation() {
@@ -203,27 +256,27 @@ document.addEventListener('DOMContentLoaded', () => {
         chatContainer.innerHTML = '';
         diagnosticDashboard.innerHTML = '';
         const mainGrid = document.getElementById('mainGrid');
-        mainGrid.classList.remove('axial-active');
-        sessionHeader.innerHTML = '';
-        sessionTimestamp.textContent = '--';
+        if (mainGrid) mainGrid.classList.remove('axial-active');
+        if (sessionHeader) sessionHeader.innerHTML = '';
+        if (sessionTimestamp) sessionTimestamp.textContent = '--';
         clearPrompts();
         userInput.value = '';
         appendMessage('ai', 'RESET COMPLETE. Terminal awaiting new input.');
     }
 
     // --- Listeners ---
-    sendBtn.addEventListener('click', () => sendMessage());
-    userInput.addEventListener('keydown', (e) => {
+    if (sendBtn) sendBtn.addEventListener('click', () => sendMessage());
+    if (userInput) userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
         }
     });
-    resetBtn.addEventListener('click', resetInvestigation);
+    if (resetBtn) resetBtn.addEventListener('click', resetInvestigation);
 
     // Initial Greeting
     appendMessage(
         "ai",
-        "Please share your narrative when you're ready. I'll identify the patterns and provide a technical breakdown once the analysis is complete."
+        "Paranormix XAI Terminal ready (V4.1.2). Submit a narrative for deterministic signal extraction and classification."
     );
 });

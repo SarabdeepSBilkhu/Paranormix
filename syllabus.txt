@@ -1,0 +1,100 @@
+AIML:
+    Unit I
+    Foundations & Applications of AI : What is Intelligence, what is AI, characteristics of artificial
+    intelligence, Foundations of AI, Evolution, and types of AI (narrow, general), Key AI problems and
+    techniques, Applications across domains (business, healthcare, automation, vision, language), Modern
+    AI Toolkits (TensorFlow, PyTorch), Responsible AI
+    AI Problem Modeling & Search Concepts : Defining AI problems as State Space and Search
+    Problems, Characteristics of AI Problem Spaces, Introduction to AI Workflows & Data-Centric
+    Modeling, Challenges in AI problem solving
+    Unit II
+    Problem Solving & Search in AI : Problem formulation and state space search, Introduction to
+    uninformed search, Core search algorithms: Best-first search, A* search, Heuristic search, Constraint
+    satisfaction, Basics of optimization: gradient-based methods and metaheuristics
+    AI problem design : Complexity, Data requirements, Solution metrics, Introduction to reinforcement
+    learning for sequential decision problems
+    Unit III
+    Machine Learning : Probability, Statistics, Linear algebra (applied focus), Supervised, unsupervised,
+    and reinforcement learning: concepts and real-world use, Feature engineering and model evaluation
+    (cross-validation, precision, recall), Bayes theorem, Bayesian networks, and probabilistic reasoning
+    Unit IV
+    Introduction to deep neural networks : Introduction to Neural Networks, Perceptron, MLP, CNN,
+    RNN, Transformer Architecture and Applications
+    Modern NLP : Introduction to NLP, NLP phases, Tokenization, Embeddings, Attention, language
+    models (BERT, GPT), Building chatbots and digital assistants, NLP use cases (sentiment analysis,
+    translation, summarization)
+    Unit V
+    Generative AI & Ethics : Fundamentals of Generative AI, LLMs, GANs, Diffusion, How generative
+    models work, Industrial applications (content creation, automation), Ethics and Responsible Use of
+    Generative AI
+    Prompt Engineering : Fundamentals of prompt, Importance of Prompt Engineering, Overview of
+    language models, Key elements of a good prompt, Prompt Patterns, Prompt Tuning
+    Unit VI
+    Data Analysis & Visualization : Data analysis and visualization using AI tools (ChatGPT Advanced
+    Data Analysis, Tableau), Working with structured and unstructured data, Data pipelines and
+    automation
+    AI Model Environments & Lifecycle Basics : Cloud services, Edge deployment, Error identification,
+    Troubleshooting, AI process automation, Introduction to MLOps and lifecycle management
+        
+Frontend:
+    Unit I
+    HTML5 and CSS3 Foundations : HTML document structure, Semantic HTML elements, Forms and
+    input controls, Multimedia elements, CSS fundamentals, Selectors and specificity, Box model,
+    Positioning and display properties, Flexbox and Grid basics, Responsive design principles, Introduction
+    to modern CSS workflows, Version control fundamentals using Git and GitHub
+    Unit II
+    JavaScript Programming Fundamentals : JavaScript syntax and data types, Variables and scope,
+    Operators and expressions, Control flow statements, Functions and arrow functions, Arrays and
+    objects, Basic event handling, Introduction to browser interaction
+    Unit III
+    Advanced JavaScript and Asynchronous Programming : Execution context and scope chain,
+    Closures, Prototype and prototype chain, Event loop and concurrency model, Promises and
+    asynchronous control flow, Microtask and macrotask queues, ES6+ language features, JavaScript
+    modules
+    Unit IV
+    DOM Manipulation and Modern Tooling : Document Object Model (DOM) structure, DOM traversal
+    and manipulation, Dynamic styling and content updates, Event propagation and delegation,
+    Debugging using browser developer tools, Module bundling concepts using modern build tools, Code
+    linting and formatting practices
+    Unit V
+    TypeScript Fundamentals : Introduction to TypeScript, Type system and annotations, Interfaces
+    and type aliases, Union and intersection types, Generics, Type inference and narrowing, TypeScript
+    compilation workflow
+    Unit VI
+    TypeScript for Web Applications and Quality Assurance : Type-safe data models, Component
+    and API typing strategies, Integration of TypeScript in frontend projects, Static code analysis,
+    Debugging workflows, Testing fundamentals, Code quality and maintainability practices
+
+Backend:
+    Unit I
+    Getting Started with Node.JS : Introducing Node.JS, Installing Node.js, Using Node.js Read
+    Evaluate Print Loop(REPL), Node Pacakage Manager (npm), Initialize Node js project using npm init,
+    NPM modules (Core Modules, Local Modules, Third Party Modules), EventEmitter in Node.js, Callbacks
+    in Node.js
+    Handling Data I/O in Node.js : Working with fs module, Working with JSON, Using Stream Module
+    to Stream Data, Compressing and Decompressing Data with Zlib, Promises and async/await
+    Unit II
+    Basic Websites With Node.JS : Introducing Express, Installing Express, GET and POST,
+    express.Router, express validator, Error Handling
+    Implementing HTTP Services in Node.JS : Introduction to HTTP module,, Setting up a basic HTTP
+    server, Understanding Request , Response and Server Objects, Implementing basic routing, Setting
+    response headers and status codes, Microservices vs. Monoliths
+    Unit III
+    Socket Services in Node.js: : Understanding Network Sockets, Creating a basic WebSocket server,
+    Sending and receiving messages, A Socket.IO Chat Server
+    Creating middlewares : Introduction to middleware, Implementing basic middleware, cookieparser, cookie-session, express-session, app.use(), app.all()
+    Authentication and Security : JWT implementation, RBAC, Security headers
+    Unit IV
+    Getting Started with MongoDB : Introduction to MongoDB, MongoDB database installation and
+    shell installation, MongoDB Terminology - database, collection, document and files, Getting familiar
+    with MongoDB documents and collections, MongoDB shell commands - create database, create
+    documents, create collections, drop collection, drop database, data manipulation - insert, update,
+    delete, find
+    Introduction to Mongoose : Schema definition, Models, CRUD operations, Perform pagination
+    Unit V
+    Introduction to PostgreSQL : Introduction to PostgreSQL database, PostgreSQL installation, Basic
+    SQL commands, CRUD operations, PostgreSQL modeling with Prisma ORM
+    Unit VI
+    Testing and Deployment : Testing RestAPI, Deployment with GitHub, Third party rendering, API
+    Versioning
+    LLM Integration : OpenAI API, Embeddings, Prompt Engineering
