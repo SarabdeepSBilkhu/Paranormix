@@ -1,4 +1,4 @@
-# Paranormix: Multi-Axial Research Terminal (V3.01)
+# Paranormix: Multi-Axial Research Terminal (V4.1.2-xai)
 
 Paranormix is a high-fidelity **Explainable AI (XAI)** research terminal designed for the empirical analysis and decoding of paranormal narratives. It separates deterministic machine learning detection from human-centric conversational interpretation to provide grounded, measurement-based insights.
 
@@ -8,10 +8,10 @@ Paranormix is a high-fidelity **Explainable AI (XAI)** research terminal designe
 
 Paranormix operates under a strict **Non-Interpretive XAI** methodology. Most AI systems conflate "finding a pattern" with "explaining the cause." Paranormix intentionally decouples these:
 
-1.  **The Detection Layer (The Engine)**: A deterministic scikit-learn pipeline that identifies statistical clusters in text without bias or speculation.
-2.  **The Interpretation Layer (The Analyst)**: An LLM-driven persona that *transcribes* and *decodes* the engine's measurements into natural dialogue, strictly adhering to the empirical data provided.
+1.  **The Detection Layer (The Engine)**: A deterministic scikit-learn pipeline combined with a rule-based precedence engine that identifies and resolves statistical clusters.
+2.  **The Interpretation Layer (The Analyst)**: An LLM-driven persona (Llama-3.1-8b) that *transcribes* and *decodes* the engine's measurements into natural dialogue, strictly adhering to the empirical precedence data.
 
-This separation ensures that the "AI" never imagines details not supported by the underlying mathematical model.
+This separation ensures the Analyst acknowledes all signals while resolving a single, definitive classification based on absolute priority.
 
 ---
 
@@ -22,7 +22,7 @@ The project is structured into three distinct but highly synchronized layers:
 ### 1. The Machine Learning Engine (`src/ml/`)
 - **Preprocessing**: Utilizes a custom `lemmatize_tokenizer` (SpaCy-powered) to consolidate semantic variations (e.g., "ghosts" → "ghost") before vectorization.
 - **Vectorization**: TF-IDF (Term Frequency-Inverse Document Frequency) with sublinear scaling and bi-gram support for stable pattern recognition.
-- **Model**: An `SGDClassifier` using Log Loss (Logistic Regression equivalent) with custom class weights to balance sparse categories like `creature` and bias results towards `psychological` explanations when ambiguity is high.
+- **Model**: An `SGDClassifier` using Log Loss (Logistic Regression equivalent). Results are passed through a **Precedence Resolver** that prioritizes physical evidence over cognitive states.
 
 ### 2. The Backend Orchestration (`src/backend/`)
 - **FastAPI**: A high-performance async API that manages the lifecycle of a diagnostic session.
@@ -35,28 +35,28 @@ The project is structured into three distinct but highly synchronized layers:
 
 ---
 
-## 📊 V3.01 Research Schema: Measurements In-Depth
+## 📊 V4.x Research Schema: Measurement & Resolution
 
-The heart of Paranormix is its measurement logic, which provides researchers with several stability markers:
+The heart of Paranormix is its resolution logic, which ensures a single, stable classification even in complex narratives:
+
+### Precedence Resolution (The Priority Axis)
+Paranormix resolves signals based on an absolute hierarchy of evidence:
+1.  **material**: Physical residue, biological markers, and structural damage.
+2.  **environmental**: Manipulation of physical space, sound, and thermal shift.
+3.  **immaterial**: Visual presence without direct physical interaction.
+4.  **rule_bound**: Narrative-governed constraints and ritualistic logic.
+5.  **internal**: Subjective cognitive experience with no external manifestation.
+
+*Resolution Rule: A higher-tier signal always overrides lower-tier signals.*
 
 ### Certainty & Confidence Bands
-Diagnostics are mapped into three academic tiers based on the primary probability score:
-- **High (≥60%)**: Robust signal alignment; low entropy.
-- **Moderate (35–59%)**: Noticeable ambiguity; multiple competing signals.
-- **Low (<35%)**: High entropy; results are purely hypothetical.
+Diagnostics are mapped into three academic tiers based on signal density:
+- **High (≥60%)**: Strong, unambiguous signal alignment.
+- **Moderate (35–59%)**: Detectable signal with moderate interference.
+- **Low (<35%)**: Trace signals only; results are considered hypothetical.
 
-### Dominance Ranking
-Classes are labeled based on their relative "pull" within the distribution:
-- **DOMINANT**: The primary statistical match.
-- **CONTENDER**: A secondary class with >15% probability.
-- **TRACE**: Residual signals (>5%).
-- **NOISE**: Statistically insignificant signals.
-
-### Stability & Resolution Boundaries
-The engine accounts for **Historical Overlap**. For instance, narratives involving "Apparitions" and "Folklore" often share similar keywords. If a result falls into an overlap zone, the `stability_status` triggers a **Resolution Limit**, automatically capping the reported certainty to prevent over-confidence in ambiguous data.
-
-### Narrative Purity
-This is a calculated metric representing the "distance" between the top two classes. A high gap indicates a "pure" narrative that fits a single profile perfectly.
+### Persistence & Context
+The engine provides a `stability_status` which tracks if signals are consistent across the narrative or isolated incidents.
 
 ---
 
@@ -64,10 +64,9 @@ This is a calculated metric representing the "distance" between the top two clas
 
 The Analyst persona is not a "Ghost Hunter." It is a technical auditor. Its behavior is governed by the following constraints:
 
-- **Identity Lock**: The Analyst must never contradict the model's primary diagnosis.
-- **Explanatory vs. Descriptive**: Instead of saying "Confidence is 80%," it explains, "The system shows high reliability in this classification due to the clear presence of..."
-- **No Speculation**: The Analyst is programmed to refuse requests to explain *why* a paranormal event occurred (e.g., "Was it a demon?"). It only explains why the *system* labeled it as such.
-- **Hidden Context**: Every Analyst turn is grounded by a hidden "Diagnostic Axial Capture" containing word counts, UTC timestamps, and raw probability arrays.
+- **Precedence Transparency**: The Analyst explicitly acknowledges secondary signals but explains they were ignored due to the priority of the primary classification.
+- **No Speculation**: It refuses to hypothesize about the "truth" behind the paranormal; it only reports what the system detected.
+- **Deterministic Persona**: Powered by Llama-3.1-8b at 0.0 temperature for factual stability.
 
 ---
 
@@ -100,10 +99,10 @@ The Analyst persona is not a "Ghost Hunter." It is a technical auditor. Its beha
 
 ## 📁 Project Map
 
-- `src/ml/inference.py`: The primary engine and measurement layer.
-- `src/ml/train.py`: Training script with custom class weights and keyword heuristics.
-- `src/backend/main.py`: FastAPI endpoints and Analyst prompting logic.
-- `src/frontend/app.js`: Implementation of the Axial Reveal and Chart.js rendering.
+- `src/ml/inference.py`: Signal extraction and measurement engine.
+- `src/ml/resolver.py`: Precedence-based classification resolution.
+- `src/backend/main.py`: FastAPI implementation and Analyst protocols (V4.1.2).
+- `src/frontend/app.js`: Implementation of the Axial Reveal and Chart.js UI.
 
 ---
 
