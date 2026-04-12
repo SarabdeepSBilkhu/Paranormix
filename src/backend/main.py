@@ -197,34 +197,35 @@ def is_valid_narrative(text: str) -> bool:
     if not text:
         return False
 
-    text = text.strip().lower()
+    import re
+    text_lower = text.strip().lower()
 
     # Minimum length check
-    if len(text) < 20:
+    if len(text_lower) < 20:
         return False
 
     # Subject indicators (narrative perspective)
     subject_indicators = [
-        "i ", "my ", "me ", "we ", "us "
+        r"\bi\b", r"\bmy\b", r"\bme\b", r"\bwe\b", r"\bus\b"
     ]
 
     # Action / event verbs
     action_words = [
-        "saw", "heard", "felt", "noticed", "found",
-        "woke", "happened", "appeared", "moved",
-        "was", "were", "had", "there was", "there were"
+        r"\bsaw\b", r"\bheard\b", r"\bfelt\b", r"\bnoticed\b", r"\bfound\b",
+        r"\bwoke\b", r"\bhappened\b", r"\bappeared\b", r"\bmoved\b",
+        r"\bwas\b", r"\bwere\b", r"\bhad\b", r"\bthere\s+was\b", r"\bthere\s+were\b"
     ]
 
     # Paranormal / event indicators
     event_words = [
-        "scratch", "blood", "door", "light", "figure",
-        "shadow", "voice", "sound", "movement", "watching",
-        "presence", "noise", "cold", "temperature"
+        r"\bscratch\b", r"\bblood\b", r"\bdoor\b", r"\blight\b", r"\bfigure\b",
+        r"\bshadow\b", r"\bvoice\b", r"\bsound\b", r"\bmovement\b", r"\bwatching\b",
+        r"\bpresence\b", r"\bnoise\b", r"\bcold\b", r"\btemperature\b"
     ]
 
-    has_subject = any(word in text for word in subject_indicators)
-    has_action = any(word in text for word in action_words)
-    has_event = any(word in text for word in event_words)
+    has_subject = any(re.search(pattern, text_lower) for pattern in subject_indicators)
+    has_action = any(re.search(pattern, text_lower) for pattern in action_words)
+    has_event = any(re.search(pattern, text_lower) for pattern in event_words)
 
     return has_subject and has_action and has_event
 
@@ -261,19 +262,17 @@ async def chat(input_data: ChatInput):
     if not client:
         raise HTTPException(503, "LLM not configured.")
     
-    if not session_id:
-        if not is_valid_narrative(input_data.user_message):
-            return {
-                "response": "Invalid input: Narrative description required for analysis.",
-                "session_id": None
-            }
-
     session_id = input_data.session_id
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     is_initial = False
 
     # ── Initial request ──
     if not session_id:
+        if not is_valid_narrative(input_data.user_message):
+            return {
+                "response": "Invalid input: Narrative description required for analysis.",
+                "session_id": None
+            }
         if len(input_data.user_message.strip()) < 20:
             return {"response": "Input too short.", "session_id": None}
 

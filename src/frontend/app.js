@@ -30,6 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
+            if (!res.ok) {
+                const errorText = await res.text();
+                throw new Error(errorText || `Status ${res.status}`);
+            }
+
             const data = await res.json();
 
             if (data.session_id) sessionId = data.session_id;
