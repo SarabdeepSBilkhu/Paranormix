@@ -78,25 +78,32 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- ML PROBS ---
         const mlBox = report.getElementById('mlProbs');
         const probs = data.ml_probs || {};
+        
+        console.log("Rendering Dashboard. ML Probs:", probs);
 
-        Object.keys(probs).forEach(cls => {
-            const val = probs[cls];
+        const probKeys = Object.keys(probs);
+        if (probKeys.length === 0) {
+            mlBox.innerHTML = '<div class="text-muted" style="font-size:0.75rem; padding: 10px;">No probability data available.</div>';
+        } else {
+            probKeys.forEach(cls => {
+                const val = probs[cls];
 
-            const row = document.createElement('div');
-            row.className = 'bar-row';
+                const row = document.createElement('div');
+                row.className = 'bar-row';
 
-            row.innerHTML = `
-                <div class="bar-lbl">
-                    <span>${cls.toUpperCase()}</span>
-                    <span>${(val * 100).toFixed(1)}%</span>
-                </div>
-                <div class="bar-out">
-                    <div class="bar-in prob bar-${cls}" style="width:${val*100}%"></div>
-                </div>
-            `;
+                row.innerHTML = `
+                    <div class="bar-lbl">
+                        <span>${cls.toUpperCase()}</span>
+                        <span>${(val * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="bar-out">
+                        <div class="bar-in prob bar-${cls}" style="width:${val*100}%"></div>
+                    </div>
+                `;
 
-            mlBox.appendChild(row);
-        });
+                mlBox.appendChild(row);
+            });
+        }
 
         // --- EVIDENCE ---
         const evBox = report.getElementById('evidenceList');
