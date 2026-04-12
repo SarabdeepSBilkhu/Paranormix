@@ -16,9 +16,21 @@ import re
 # Add project root
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from src.ml.resolver import resolve, PRECEDENCE
+def find_model_path():
+    """Search for the classifier in multiple potential locations."""
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    candidates = [
+        os.path.join(base_dir, "models", "classifier.pkl"),
+        os.path.join(os.getcwd(), "models", "classifier.pkl"),
+        "models/classifier.pkl",
+        "/app/models/classifier.pkl", # Common container path
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    return None
 
-MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "models", "classifier.pkl")
+MODEL_PATH = find_model_path()
 
 # ─── Normalized thresholds (no class bias) ───────────────────────────────────
 VALIDATION_THRESHOLDS = {
@@ -136,8 +148,8 @@ SIGNAL_PATTERNS = {
 
 class SignalExtractor:
     def __init__(self):
-        print(f"Signal Extractor: Initializing. Path: {MODEL_PATH}")
-        if os.path.exists(MODEL_PATH):
+        print(f"Signal Extractor: Initializing. Search result: {MODEL_PATH}")
+        if MODEL_PATH and os.path.exists(MODEL_PATH):
             try:
                 self.model = joblib.load(MODEL_PATH)
                 print("Signal Extractor: Model loaded successfully.")
@@ -146,7 +158,7 @@ class SignalExtractor:
                 self.model = None
         else:
             self.model = None
-            print(f"WARNING: Model file NOT FOUND at {MODEL_PATH}")
+            print(f"WARNING: No valid model file found in search paths.")
 
     def extract_signals(self, text):
         text_lower = text.lower()
