@@ -1,0 +1,30 @@
+--- PARANORMIX EVALUATION REPORT ---
+
+SYSTEM CLASSIFICATION (FINAL LABELS)
+               precision    recall  f1-score   support
+
+     material       0.60      0.68      0.64       300
+environmental       0.62      0.77      0.69       300
+   immaterial       0.64      0.88      0.74       300
+   rule_bound       0.80      0.44      0.57       300
+     internal       0.69      0.48      0.56       300
+
+     accuracy                           0.65      1500
+    macro avg       0.67      0.65      0.64      1500
+ weighted avg       0.67      0.65      0.64      1500
+
+
+ML SIGNAL EXTRACTOR (BINARY SIGNALS)
+Signal          | Precision  | Recall     | F1        
+-------------------------------------------------------
+MATERIAL        | 0.55       | 1.00       | 0.71      
+ENVIRONMENTAL   | 0.46       | 0.98       | 0.63      
+IMMATERIAL      | 0.58       | 1.00       | 0.74      
+RULE_BOUND      | 0.70       | 0.68       | 0.69      
+INTERNAL        | 0.13       | 1.00       | 0.22      
+
+
+INTERPRETABILITY NOTE:
+The system uses a confidence-aware precedence resolver.
+Final classification depends on both signal strength and tier weighting.
+Errors may occur due to overlapping signals or weak evidence.

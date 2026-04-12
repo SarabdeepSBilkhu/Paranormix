@@ -38,9 +38,9 @@ src/tests/
 
 # Data & Models
 data/*.json
-models/
+models/*
 !models/classifier.pkl
-evaluation_results/
+evaluation_results/*
 !evaluation_results/metrics_report.txt
 *.xlsx
 creepypastas.xlsx
