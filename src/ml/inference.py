@@ -136,12 +136,17 @@ SIGNAL_PATTERNS = {
 
 class SignalExtractor:
     def __init__(self):
+        print(f"Signal Extractor: Initializing. Path: {MODEL_PATH}")
         if os.path.exists(MODEL_PATH):
-            self.model = joblib.load(MODEL_PATH)
-            print("Signal Extractor: Model loaded.")
+            try:
+                self.model = joblib.load(MODEL_PATH)
+                print("Signal Extractor: Model loaded successfully.")
+            except Exception as e:
+                print(f"Signal Extractor: ERROR loading model: {e}")
+                self.model = None
         else:
             self.model = None
-            print("WARNING: No trained model found.")
+            print(f"WARNING: Model file NOT FOUND at {MODEL_PATH}")
 
     def extract_signals(self, text):
         text_lower = text.lower()

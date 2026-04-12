@@ -159,6 +159,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // --- METADATA ---
+        const wordCountEl = report.getElementById('dashWordCount');
+        if (wordCountEl && data.metadata) {
+            wordCountEl.textContent = data.metadata.words || 0;
+        }
+
         diagnosticDashboard.appendChild(report);
     }
 
