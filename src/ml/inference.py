@@ -18,7 +18,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 from src.ml.resolver import resolve, PRECEDENCE
 
-MODEL_PATH = os.path.join("models", "classifier.pkl")
+MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "models", "classifier.pkl")
 
 # ─── Normalized thresholds (no class bias) ───────────────────────────────────
 VALIDATION_THRESHOLDS = {
@@ -168,7 +168,7 @@ class SignalExtractor:
         if self.model:
             try:
                 probs = self.model.predict_proba([text])[0]
-                ml_probs = dict(zip(self.model.classes_, probs))
+                ml_probs = {str(k): float(v) for k, v in zip(self.model.classes_, probs)}
 
                 for cls in PRECEDENCE:
                     if candidate_signals[cls]:
