@@ -16,6 +16,8 @@ import re
 # Add project root
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
+from src.ml.resolver import resolve, PRECEDENCE
+
 def find_model_path():
     """Search for the classifier in multiple potential locations."""
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
