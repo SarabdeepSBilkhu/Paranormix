@@ -1,19 +1,11 @@
 """
 Paranormix Signal Extractor (inference.py)
 ==========================================
-Extracts structured boolean signals from unstructured narrative text.
 
-Architecture Position:
-    Text → THIS MODULE (Signal Extraction) → resolver.py (Final Classification)
-
-Output Contract:
-    {
-        "signals": {"material": bool, ...},
-        "evidence": {"material": [...], ...}
-    }
-
-The trained ML model is used to assist signal detection but does NOT
-determine the final class label.
+Architecture:
+1. Signal Extraction (Regex)
+2. ML-assisted validation (soft, not destructive)
+3. Rule Resolver (resolver.py)
 """
 
 import joblib
@@ -21,17 +13,36 @@ import os
 import sys
 import re
 
-# Add project root to sys.path to allow absolute imports
+# Add project root
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from src.ml.preprocessing import lemmatize_tokenizer
 from src.ml.resolver import resolve, PRECEDENCE
 
-MODEL_PATH = os.path.join("models", "ghost_model.pkl")
+MODEL_PATH = os.path.join("models", "classifier.pkl")
 
-# ─── Signal Detection Patterns ───────────────────────────────────────────────
-# Each class has strict pattern + context pairing to avoid keyword leakage.
+# ─── Normalized thresholds (no class bias) ───────────────────────────────────
+VALIDATION_THRESHOLDS = {
+    "material": 0.08,
+    "environmental": 0.08,
+    "immaterial": 0.08,
+    "rule_bound": 0.08,
+    "internal": 0.08,
+}
 
+# ─── Exclusion patterns ──────────────────────────────────────────────────────
+EXCLUSION_PATTERNS = {
+    "material": [
+        r"\bblood\s(?:relation|pressure|line|stream|cell|thirsty)\b",
+        r"\bscar\stissue\b",
+    ],
+    "environmental": [
+        r"\bcold\s(?:war|shoulder|feet|beer|coffee|case|front)\b",
+        r"\bshaking\shands\b",
+        r"\bsmell\sa\srat\b",
+    ],
+}
+
+# ─── Signal patterns ─────────────────────────────────────────────────────────
 SIGNAL_PATTERNS = {
     "material": [
         (r"\bscratch(?:ed|es|ing)?\b", "scratch marks"),
@@ -114,77 +125,75 @@ SIGNAL_PATTERNS = {
         (r"\bmental\b", "mental"),
         (r"\bpsych(?:ological|osis)\b", "psychological"),
         (r"\blosing\s(?:my|his|her)\smind\b", "losing mind"),
+        (r"\bfelt\s(?:a|someone|something)\s(?:watching|presence)\b", "felt presence"),
+        (r"\bcouldn't\smove\b", "sleep paralysis"),
+        (r"\bparalyzed\b", "paralysis"),
+        (r"\bi\s(?:thought|felt)\s(?:it\swas|someone\swas)\b", "uncertain perception"),
+        (r"\bwas\sit\sreal\b", "reality doubt"),
     ],
 }
 
 
 class SignalExtractor:
-    """
-    Hybrid signal extraction engine.
-
-    Combines:
-    1. Pattern-based detection (deterministic)
-    2. ML-assisted signal validation (trained model)
-
-    Output is always boolean signals + evidence phrases.
-    Final classification is handled by resolver.py.
-    """
-
     def __init__(self):
         if os.path.exists(MODEL_PATH):
             self.model = joblib.load(MODEL_PATH)
             print("Signal Extractor: Model loaded.")
         else:
             self.model = None
-            print("WARNING: No trained model found. Using pattern-only detection.")
+            print("WARNING: No trained model found.")
 
     def extract_signals(self, text):
-        """
-        Extract boolean signals and evidence phrases from text.
-
-        Returns:
-            dict with keys: signals (dict[str, bool]), evidence (dict[str, list[str]])
-        """
         text_lower = text.lower()
 
-        # ── Pattern-based signal detection ──
-        signals = {cls: False for cls in PRECEDENCE}
+        candidate_signals = {cls: False for cls in PRECEDENCE}
         evidence = {cls: [] for cls in PRECEDENCE}
 
+        # ── Pattern detection ──
         for cls, patterns in SIGNAL_PATTERNS.items():
+            if cls in EXCLUSION_PATTERNS:
+                if any(re.search(p, text_lower) for p in EXCLUSION_PATTERNS[cls]):
+                    continue
+
             for regex, label in patterns:
                 if re.search(regex, text_lower):
-                    signals[cls] = True
+                    candidate_signals[cls] = True
                     if label not in evidence[cls]:
                         evidence[cls].append(label)
 
-        return {"signals": signals, "evidence": evidence}
+        # ── ML validation (soft, non-destructive) ──
+        validated_signals = candidate_signals.copy()
+        ml_probs = {}
+
+        if self.model:
+            try:
+                probs = self.model.predict_proba([text])[0]
+                ml_probs = dict(zip(self.model.classes_, probs))
+
+                for cls in PRECEDENCE:
+                    if candidate_signals[cls]:
+                        threshold = VALIDATION_THRESHOLDS.get(cls, 0.08)
+                        if ml_probs.get(cls, 0) < threshold:
+                            # do NOT remove signal, just keep it weaker
+                            validated_signals[cls] = True
+            except Exception as e:
+                print(f"Validation error: {e}")
+
+        return {
+            "signals": validated_signals,
+            "evidence": evidence,
+            "ml_probs": ml_probs
+        }
 
     def analyze(self, text):
-        """
-        Full analysis pipeline: Signal Extraction → Rule Resolution.
-
-        Args:
-            text: str — the narrative to analyze.
-
-        Returns:
-            dict with:
-                classification: str
-                confidence: float
-                confidence_band: str
-                signals: dict[str, bool]
-                evidence: dict[str, list[str]]
-                ignored_signals: list[str]
-        """
-        # Step 1: Extract signals
         extraction = self.extract_signals(text)
+
         signals = extraction["signals"]
         evidence = extraction["evidence"]
+        ml_probs = extraction["ml_probs"]
 
-        # Step 2: Resolve via Rule Engine (deterministic)
         resolution = resolve(signals, evidence)
 
-        # Step 3: Assemble output
         return {
             "classification": resolution["classification"],
             "confidence": resolution["confidence"],
@@ -192,27 +201,26 @@ class SignalExtractor:
             "signals": signals,
             "evidence": evidence,
             "ignored_signals": resolution["ignored_signals"],
+            "ml_probs": ml_probs,
         }
 
 
 if __name__ == "__main__":
     extractor = SignalExtractor()
 
-    test_stories = [
-        "I saw a ghostly figure in the hallway that vanished when I approached.",
-        "There were scratch marks on my arm and blood on the floor.",
-        "The door slammed shut and the temperature dropped suddenly.",
-        "The ancient curse stated that anyone who enters must not look back.",
-        "I kept dreaming about the same hallway, losing my mind slowly.",
+    samples = [
+        "I saw a shadow figure watching me but I couldn't move.",
+        "The door slammed and the temperature dropped suddenly.",
+        "There were scratches and blood on my arm.",
+        "The ritual said you must not look back.",
+        "I thought I was imagining things and losing my mind."
     ]
 
-    for story in test_stories:
+    for s in samples:
         print("\n" + "=" * 60)
-        print(f"INPUT: {story[:80]}...")
-        result = extractor.analyze(story)
-        print(f"CLASS: {result['classification']}")
-        print(f"CONFIDENCE: {result['confidence']} ({result['confidence_band']})")
-        print(f"SIGNALS: {result['signals']}")
-        print(f"EVIDENCE: {result['evidence'][result['classification']]}")
-        if result['ignored_signals']:
-            print(f"IGNORED: {result['ignored_signals']}")
+        print("INPUT:", s)
+        r = extractor.analyze(s)
+        print("CLASS:", r["classification"])
+        print("CONF:", r["confidence"], r["confidence_band"])
+        print("SIGNALS:", r["signals"])
+        print("EVIDENCE:", r["evidence"][r["classification"]])

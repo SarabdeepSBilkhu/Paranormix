@@ -2,32 +2,64 @@ import os
 import re
 import spacy
 
-# Load SpaCy for lemmatization
+# Load SpaCy
 try:
-    # Use en_core_web_sm if available
     nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 except:
     nlp = None
 
+
 def lemmatize_tokenizer(text):
     """
-    Custom tokenizer for TfidfVectorizer that handles cleaning and lemmatization.
+    Custom tokenizer for TF-IDF:
+    - cleaning
+    - lemmatization
+    - controlled filtering
     """
+
     if not isinstance(text, str):
         return []
-        
-    # Pre-clean: lower and remove non-alphas
+
+    # Basic cleaning
     text = re.sub(r'[^a-zA-Z\s]', '', text.lower())
-    
-    if nlp:
-        doc = nlp(text)
-        return [token.lemma_ for token in doc if not token.is_stop and len(token.text) > 2]
-    else:
-        # Fallback to simple split
+
+    if not nlp:
         return text.split()
 
+    doc = nlp(text)
+
+    tokens = []
+    for token in doc:
+        lemma = token.lemma_.strip()
+
+        # Skip short tokens
+        if len(lemma) < 3:
+            continue
+
+        # Skip punctuation / spaces
+        if token.is_punct or token.is_space:
+            continue
+
+        # Skip pure stopwords EXCEPT important negations
+        if token.is_stop and lemma not in {"no", "not"}:
+            continue
+
+        # Skip useless lemmas
+        if lemma in {"be", "have", "do", "say", "go", "get"}:
+            continue
+
+        tokens.append(lemma)
+
+    return tokens
+
+
 def clean_text_simple(text):
-    """Helper for basic text cleaning without tokenization"""
+    """
+    Basic cleaning without tokenization
+    """
+    if not isinstance(text, str):
+        return ""
+
     text = text.lower()
     text = re.sub(r'[^a-zA-Z\s]', '', text)
     return text

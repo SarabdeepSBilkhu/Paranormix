@@ -4,118 +4,157 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Paranormix | Diagnostic Terminal</title>
-    <link rel="stylesheet" href="style.css?v=4.1.2" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="style.css?v=7.1.0" />
+
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
 </head>
+
 <body>
-    <div class="app-shell">
-        <header class="main-header">
-            <div class="brand">
-                <span class="logo-text">PARANORMIX</span>
-                <span class="label-mono" style="font-size: 10px; opacity: 0.5; margin-left: 10px;">V4.1.2</span>
+<div class="app-shell">
+
+    <!-- HEADER -->
+    <header class="main-header">
+        <div class="brand">
+            <span class="logo-text">PARANORMIX</span>
+            <span class="logo-sub">Neural Classification Core</span>
+        </div>
+
+        <div class="header-metadata mono" id="sessionHeader">
+            <!-- Injected -->
+        </div>
+
+        <div class="header-controls">
+            <button id="resetBtn" class="reset-link">Reset Log</button>
+        </div>
+    </header>
+
+
+    <!-- MAIN LAYOUT -->
+    <main class="main-layout" id="mainGrid">
+
+        <!-- LEFT PANEL -->
+        <section class="research-panel">
+
+            <div class="panel-header flex-between">
+                <h2>Classification Interface</h2>
+                <span class="status-indicator" id="analystStatus">System Ready</span>
             </div>
-            <div class="header-metadata mono" id="sessionHeader">
-                <!-- Session Metadata injected here -->
+
+            <div id="chatContainer" class="terminal-output analyst-scroll">
+                <!-- Chat messages -->
             </div>
-            <div class="header-controls">
-                <button id="resetBtn" class="reset-link mono">RESET CHAT</button>
-            </div>
-        </header>
 
-        <main class="main-layout research-grid" id="mainGrid">
-            <!-- Left Panel: Interactive Analyst Dialogue (Dynamic) -->
-            <section class="research-panel catalyst-panel">
-                <div class="panel-header flex-between">
-                    <h2 class="mono">ANALYST DIALOGUE INTERFACE</h2>
-                    <span class="status-indicator mono" id="analystStatus">READY</span>
-                </div>
-                
-                <div id="chatContainer" class="terminal-output analyst-scroll">
-                    <!-- Messages appear here -->
-                </div>
+            <div class="interrogation-input-group">
 
-                <div class="interrogation-input-group">
-                    <div id="suggestedPrompts" class="prompt-suggestions mono">
-                        <!-- Suggested follow-up prompts injected here -->
-                    </div>
-                    <div class="input-wrapper">
-                        <textarea id="userInput" placeholder="Awaiting subject narrative for axial capture..." rows="1"></textarea>
-                        <button id="sendBtn" class="primary-action">
-                            <span class="mono">SUBMIT</span>
-                        </button>
-                    </div>
-                </div>
+                <div id="suggestedPrompts" class="prompt-suggestions"></div>
 
-                <footer class="terminal-footer research-footer">
-                    <div class="footer-meta mono">
-                        <span>MODEL: SGD LOGISTIC REGRESSION</span>
-                        <span>LLM: ANALYST LLAMA3 DECODER</span>
-                        <span id="sessionTimestamp">--</span>
-                    </div>
-                </footer>
-            </section>
+                <div class="input-wrapper">
+                    <textarea id="userInput"
+                              placeholder="Describe the occurrence for classification..."
+                              rows="2"></textarea>
 
-            <!-- Right Panel: Empirical Metrics (Static per Analysis) -->
-            <section id="metricPanel" class="research-panel metric-panel panel-collapsed">
-                <div class="panel-header">
-                    <h2 class="mono">EMPIRICAL DATA AXIS</h2>
-                </div>
-                <div id="diagnosticDashboard" class="axial-scroll">
-                    <!-- Injected via app.js -->
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <!-- Dashboard Template -->
-    <template id="dashboardTemplate">
-        <div class="axial-report">
-            <!-- Section 1: Core Output -->
-            <div class="axial-section core-report">
-                <div class="metric-row">
-                    <div class="metric-block">
-                        <span class="label-mono">CLASSIFICATION</span>
-                        <h1 id="dashPrediction" class="prediction-text">UNDETERMINED</h1>
-                    </div>
-                    <div class="metric-block align-right">
-                        <span class="label-mono">CONFIDENCE BAND</span>
-                        <div id="dashBand" class="band-indicator">--</div>
-                    </div>
-                </div>
-                <div class="stability-text mono" id="dashConfidence">
-                    Awaiting analysis...
+                    <button id="sendBtn" class="primary-action">
+                        <span>Analyze</span>
+                    </button>
                 </div>
             </div>
 
-            <!-- Section 2: Signal Flags -->
-            <div class="axial-section">
-                <h3 class="section-title mono">SIGNAL FLAGS</h3>
-                <div class="chart-box" id="signalFlags"></div>
+            <footer class="research-footer">
+                <div class="footer-meta mono">
+                    <span id="sessionTimestamp">--</span>
+                </div>
+            </footer>
+        </section>
+
+
+        <!-- RIGHT PANEL -->
+        <section id="metricPanel" class="research-panel">
+
+            <div class="panel-header">
+                <h2>Diagnostic Dashboard</h2>
             </div>
 
-            <!-- Section 3: Evidence -->
-            <div class="axial-section">
-                <h3 class="section-title mono">DETECTED EVIDENCE</h3>
-                <div id="evidenceList" class="ranked-list mono">
-                    <!-- Evidence items injected here -->
-                </div>
+            <div id="diagnosticDashboard" class="axial-scroll">
+                <!-- Injected -->
             </div>
 
-            <!-- Section 4: Precedence Info -->
-            <div class="axial-section">
-                <h3 class="section-title mono">PRECEDENCE RESOLUTION</h3>
-                <div class="signal-group">
-                    <h4 class="mono small">IGNORED SIGNALS (lower precedence)</h4>
-                    <ul id="ignoredSignals" class="signal-list negative"></ul>
+        </section>
+    </main>
+</div>
+
+
+<!-- DASHBOARD TEMPLATE -->
+<template id="dashboardTemplate">
+
+    <div class="axial-report">
+
+        <!-- RESULT -->
+        <div class="axial-section">
+            <div class="metric-row">
+
+                <div class="metric-block">
+                    <span class="label-mono">Classification Result</span>
+                    <h1 id="dashPrediction" class="prediction-text">--</h1>
                 </div>
+
+                <div class="metric-block align-right">
+                    <span class="label-mono">Confidence Level</span>
+                    <div id="dashBand" class="band-indicator">--</div>
+                </div>
+
             </div>
-            
-            <div class="session-audit mono">
-                <span>WORD COUNT: <span id="dashWordCount">0</span></span>
+
+            <div id="dashConfidence" class="stability-text">
+                --
             </div>
         </div>
-    </template>
 
-    <script src="app.js?v=4.1.2"></script>
+
+        <!-- ML PROBABILITIES -->
+        <div class="axial-section">
+            <h3 class="section-title">ML Probability Distribution</h3>
+            <div id="mlProbs" class="chart-box"></div>
+        </div>
+
+
+        <!-- EVIDENCE -->
+        <div class="axial-section">
+            <h3 class="section-title">Extracted Evidence Markers</h3>
+            <div id="evidenceList" class="ranked-list"></div>
+        </div>
+
+
+        <!-- SIGNAL COMPETITION -->
+        <div class="axial-section">
+            <h3 class="section-title">Signal Competition Analysis</h3>
+
+            <div class="signal-group">
+                <h4 class="small">Lower-Scoring Signals</h4>
+                <ul id="ignoredSignals" class="signal-list negative"></ul>
+            </div>
+        </div>
+
+        <!-- MODEL PERF -->
+        <div class="axial-section">
+            <h3 class="section-title">Model Reliability Baseline (Test Metrics)</h3>
+            <div id="modelMetricsGrid" class="metrics-grid"></div>
+        </div>
+
+
+        <!-- SESSION META -->
+        <div class="session-audit mono">
+            <span>
+                ANALYSIS COMPLETE |
+                WORD_COUNT: <span id="dashWordCount">0</span>
+            </span>
+        </div>
+
+    </div>
+
+</template>
+
+
+<script src="app.js?v=6.2.0"></script>
 </body>
 </html>
