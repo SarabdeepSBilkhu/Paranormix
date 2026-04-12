@@ -193,15 +193,40 @@ def load_metrics():
             print(f"Error loading metrics: {e}")
     return metrics
 
-def is_valid_narrative(text):
-    text = text.lower()
+def is_valid_narrative(text: str) -> bool:
+    if not text:
+        return False
 
-    keywords = [
-        "saw", "heard", "felt", "noticed", "woke", "happened",
-        "appeared", "moved", "standing", "watching"
+    text = text.strip().lower()
+
+    # Minimum length check
+    if len(text) < 20:
+        return False
+
+    # Subject indicators (narrative perspective)
+    subject_indicators = [
+        "i ", "my ", "me ", "we ", "us "
     ]
 
-    return any(k in text for k in keywords)
+    # Action / event verbs
+    action_words = [
+        "saw", "heard", "felt", "noticed", "found",
+        "woke", "happened", "appeared", "moved",
+        "was", "were", "had", "there was", "there were"
+    ]
+
+    # Paranormal / event indicators
+    event_words = [
+        "scratch", "blood", "door", "light", "figure",
+        "shadow", "voice", "sound", "movement", "watching",
+        "presence", "noise", "cold", "temperature"
+    ]
+
+    has_subject = any(word in text for word in subject_indicators)
+    has_action = any(word in text for word in action_words)
+    has_event = any(word in text for word in event_words)
+
+    return has_subject and has_action and has_event
 
 # ─── Routes ──────────────────────────────────────────────────────────────────
 
@@ -236,8 +261,12 @@ async def chat(input_data: ChatInput):
     if not client:
         raise HTTPException(503, "LLM not configured.")
     
-    if not is_valid_narrative(input_data.user_message):
-        raise HTTPException(400, "Invalid input: Narrative description required.")
+    if not session_id:
+        if not is_valid_narrative(input_data.user_message):
+            return {
+                "response": "Invalid input: Narrative description required for analysis.",
+                "session_id": None
+            }
 
     session_id = input_data.session_id
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
