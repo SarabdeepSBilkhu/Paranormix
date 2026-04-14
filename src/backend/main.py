@@ -282,7 +282,6 @@ internal: {ml_probs.get('internal', 0):.3f}
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=messages,
-        # INT428 CONFIGURATION:
         # Low temperature ensures deterministic, objective analysis grounded in evidence.
         temperature=0.0, 
         # Top-p restricted to 0.1 to filter for the most probable, technically accurate tokens.

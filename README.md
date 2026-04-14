@@ -1,47 +1,47 @@
 # Paranormix: Neural Investigation Log
 
-Paranormix is a forensic analysis terminal designed to detect and classify patterns in paranormal narratives. It uses a hybrid approach combining deterministic pattern matching with machine learning to ensure both transparency and accuracy in its diagnostics.
+Paranormix is a forensic analysis terminal designed to detect and classify patterns in paranormal narratives. It uses a hybrid approach combining deterministic pattern matching with machine learning to ensure both transparency and accuracy in its diagnostics. Developed in alignment with the **INT428 assessment criteria** for technical rigor, analytical persona alignment, and prompt engineering.
 
 ---
 
-## 🏗️ System Architecture
+## 🏗️ System Architecture & Data Pipeline
 
-The analysis pipeline is structured into four sequential steps, following a **Hybrid Explainable AI (XAI)** philosophy:
+The analysis pipeline maps the journey of narrative data from initial dataset to final visualization, relying on a **Hybrid Explainable AI (XAI)** philosophy:
 
 ```mermaid
 graph TD
-    Input[Narrative Text] --> Step1[1. Signal Extraction]
-    Step1 -->|Regex Patterns| Step2[2. ML Classification]
-    Step2 -->|Probabilities| Step3[3. Rule Resolver]
-    Step3 -->|Precedence Rules| Output[Final Determination]
-    Output --> Step4[4. LLM Analyst]
-    Step4 -->|Natural Language| User[XAI Diagnostic Report]
+    Data[creepypastas.xlsx] --> Ingestion[1. Collection & Ingestion]
+    Ingestion --> Transform[2. NLP Transformation]
+    Transform --> Step2[3. ML Classification SGD]
+    Step2 -->|Probability Distribution| Step3[4. Rule Resolver]
+    Step3 -->|Precedence Rules| Target[Final Classification]
+    Target --> Step4[5. LLM Analyst]
+    Step4 -->|Domain Constraints & Refusals| UI[6. Diagnostic Dashboard]
+    UI -->|Markdown Render| User[XAI Report Display]
 ```
 
-### 1. Signal Extraction (Regex)
-Identifies explicit keywords and indicators within the narrative. Provides direct interpretability for forensic markers (e.g., "knocking", "scratches").
+### 1. Data Ingestion & Transformation 
+Extracts texts directly from the `creepypastas.xlsx` dataset. Applies NLP rules (Regex, Lemmatization) to isolate forensic markers (e.g., "knocking", "scratches").
 
 ### 2. ML Classification (Core Engine)
-A trained **SGD Classifier** with balanced weights assigns probability scores to the narrative tiers. This layer handles linguistic ambiguity where explicit keywords might be missing.
+A trained **SGD Classifier** evaluates the vector space to assign probability scores across the five narrative tiers.
 
 ### 3. Rule Resolver (Logic Layer)
-A deterministic engine that resolves conflicts using a strict precedence hierarchy (e.g., Physical evidence overrides purely visual signals), ensuring stable determinations.
+A deterministic engine that resolves conflicts using a strict precedence hierarchy, ensuring stable and reliable determinations. 
 
-### 4. LLM Analyst (XAI)
-A persona-driven analyst that explains the classification in plain language, strictly grounded in the technical evidence and confidence scores provided by the previous layers.
+### 4. LLM Analyst & Strict Refusal Policy
+A persona-driven analyst rigorously restricted by **absolute refusal policies**. Any non-domain query entirely aborts the explanation phase. For valid domain queries, it generates an explanation grounded in evidence.
+
+### 5. Diagnostic Dashboard (UI)
+Translates the backend states into a visual suite. Features include rendering ML probability distributions, and clear Markdown rendering (using distinct blue-colored bold headers) for optimal academic readability and visualization.
 
 ---
 
 ## 📊 Evaluation & Metrics
 
-The model is trained on a **balanced dataset** featuring **1,000 samples per classification class**, ensuring the system is unbiased towards common signal types.
+The model is trained on a strictly **balanced dataset** featuring exactly **1,000 samples per classification class** (5,000 total samples), ensuring the system is unbiased towards common signal types.
 
-**Accuracy Baseline**: The system maintains an evaluation accuracy of **~65%** on complex, real-world narrative distributions, with high precision in the **Immaterial** and **Environmental** tiers.
-
-Key metrics tracked:
-- **Precision**: Accuracy of detected signals.
-- **Recall**: Completeness of signal detection.
-- **F1-Score**: Harmonic mean for balanced performance assessment.
+**Accuracy Baseline**: The system maintains an evaluation accuracy of **~65%** on complex, real-world narrative distributions, with particularly high precision in the **Immaterial** and **Environmental** tiers.
 
 ---
 
@@ -63,9 +63,9 @@ Key metrics tracked:
 ### Operational Map
 - `src/ml/inference.py`: Signal extraction and ML probability layer.
 - `src/ml/resolver.py`: Precedence-based decision logic.
-- `src/backend/main.py`: API layer and Analyst orchestration.
+- `src/backend/main.py`: API layer, LLM configuration, and strict refusal checks.
 - `src/scripts/evaluate.py`: Performance measurement suite.
 
 ---
 
-*Developed for Machine Learning Diagnostic Research and AI Course Evaluation.*
+*Developed for Machine Learning Diagnostic Research and AI Course Evaluation (INT428).*
