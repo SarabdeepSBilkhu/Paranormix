@@ -35,14 +35,12 @@ MANIFEST
 # Research & Development
 scripts/
 src/tests/
+charts/
 
 # Data & Models
-data/*.json
-models/*
-!models/classifier.pkl
-evaluation_results/*
-!evaluation_results/metrics_report.txt
-*.xlsx
+data/
+evaluation_results/
+evaluation_results/metrics_report.txt
 creepypastas.xlsx
 
 # System files

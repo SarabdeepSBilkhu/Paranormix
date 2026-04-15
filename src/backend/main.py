@@ -271,6 +271,7 @@ internal: {ml_probs.get('internal', 0):.3f}
             "user",
             "DIAGNOSTIC REPORT:\n\n" + report_context
         )
+        print(report_context)
 
     else:
         session_store.append_message(session_id, "user", input_data.user_message)

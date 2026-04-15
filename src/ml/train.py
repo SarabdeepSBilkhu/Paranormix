@@ -17,9 +17,9 @@ from src.ml.preprocessing import lemmatize_tokenizer
 # ─── Configuration ────────────────────────────────────────────────────────────
 CLASSES = ["material", "environmental", "immaterial", "rule_bound", "internal"]
 
-TRAIN_DATA_PATH = os.path.join("data", "train_balanced.json")
-TEST_DATA_PATH = os.path.join("data", "test_balanced.json")
-FROZEN_CORPUS_PATH = os.path.join("data", "frozen_corpus.json")
+TRAIN_DATA_PATH = os.path.join("data", "train.json")
+TEST_DATA_PATH = os.path.join("data", "test.json")
+CORPUS_PATH = os.path.join("data", "corpus.json")
 
 MODEL_DIR = os.path.join("models")
 os.makedirs(MODEL_DIR, exist_ok=True)
@@ -62,8 +62,8 @@ def train_model():
     X_train, y_train = shuffle(X_train, y_train, random_state=42)
 
     # ─── Load frozen corpus (for vocabulary expansion) ────────────────────────
-    if os.path.exists(FROZEN_CORPUS_PATH):
-        with open(FROZEN_CORPUS_PATH, "r", encoding="utf-8") as f:
+    if os.path.exists(CORPUS_PATH):
+        with open(CORPUS_PATH, "r", encoding="utf-8") as f:
             frozen_data = json.load(f)
         frozen_texts = [item["text"] for item in frozen_data]
         print(f"Loaded {len(frozen_texts)} frozen corpus samples.")
