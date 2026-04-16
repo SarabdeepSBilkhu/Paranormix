@@ -2,6 +2,8 @@ import json
 import os
 import sys
 import joblib
+import argparse
+import numpy as np
 
 # Add project root
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -17,22 +19,24 @@ from src.ml.preprocessing import lemmatize_tokenizer
 # ─── Configuration ────────────────────────────────────────────────────────────
 CLASSES = ["material", "environmental", "immaterial", "rule_bound", "internal"]
 
-TRAIN_DATA_PATH = os.path.join("data", "train.json")
-TEST_DATA_PATH = os.path.join("data", "test.json")
-CORPUS_PATH = os.path.join("data", "corpus.json")
 
-MODEL_DIR = os.path.join("models")
-os.makedirs(MODEL_DIR, exist_ok=True)
+def load_json(path):
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"File not found: {path}")
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
-def train_model():
+def train_model(train_path, test_path=None, corpus_path=None, model_dir="models"):
     """
     Train the Signal Extractor model (Step 2 of pipeline).
 
     - Uses balanced training data
-    - Uses frozen corpus for vocabulary expansion
+    - Uses optional frozen corpus for vocabulary expansion
     - Outputs probabilistic classifier (log_loss)
     """
+
+    np.random.seed(42)
 
     print("=" * 60)
     print("Paranormix Signal Extractor — Training")
@@ -40,12 +44,7 @@ def train_model():
     print("=" * 60)
 
     # ─── Load training data ───────────────────────────────────────────────────
-    if not os.path.exists(TRAIN_DATA_PATH):
-        print("ERROR: Training data not found.")
-        return
-
-    with open(TRAIN_DATA_PATH, "r", encoding="utf-8") as f:
-        train_data = json.load(f)
+    train_data = load_json(train_path)
 
     X_train = [item["text"] for item in train_data]
     y_train = [item["label"] for item in train_data]
@@ -61,15 +60,14 @@ def train_model():
     # Shuffle data
     X_train, y_train = shuffle(X_train, y_train, random_state=42)
 
-    # ─── Load frozen corpus (for vocabulary expansion) ────────────────────────
-    if os.path.exists(CORPUS_PATH):
-        with open(CORPUS_PATH, "r", encoding="utf-8") as f:
-            frozen_data = json.load(f)
+    # ─── Load frozen corpus ───────────────────────────────────────────────────
+    frozen_texts = []
+    if corpus_path and os.path.exists(corpus_path):
+        frozen_data = load_json(corpus_path)
         frozen_texts = [item["text"] for item in frozen_data]
         print(f"Loaded {len(frozen_texts)} frozen corpus samples.")
     else:
-        frozen_texts = []
-        print("WARNING: Frozen corpus not found.")
+        print("WARNING: Frozen corpus not provided or not found.")
 
     # ─── Vectorizer ───────────────────────────────────────────────────────────
     vectorizer = TfidfVectorizer(
@@ -98,10 +96,9 @@ def train_model():
     print("Training signal extractor...")
     clf.fit(X_train_vec, y_train)
 
-    # ─── Evaluation (balanced test set) ───────────────────────────────────────
-    if os.path.exists(TEST_DATA_PATH):
-        with open(TEST_DATA_PATH, "r", encoding="utf-8") as f:
-            test_data = json.load(f)
+    # ─── Evaluation ───────────────────────────────────────────────────────────
+    if test_path and os.path.exists(test_path):
+        test_data = load_json(test_path)
 
         X_test = [item["text"] for item in test_data]
         y_test = [item["label"] for item in test_data]
@@ -113,20 +110,48 @@ def train_model():
         print("-" * 50)
         print(classification_report(y_test, y_pred, labels=CLASSES, zero_division=0))
     else:
-        print("WARNING: Test dataset not found. Skipping evaluation.")
+        print("WARNING: Test dataset not provided or not found. Skipping evaluation.")
 
-    # ─── Save pipeline ────────────────────────────────────────────────────────
+    # ─── Save model + metadata ────────────────────────────────────────────────
+    os.makedirs(model_dir, exist_ok=True)
+
     pipeline = Pipeline([
         ("tfidf", vectorizer),
         ("clf", clf)
     ])
 
-    model_path = os.path.join(MODEL_DIR, "classifier.pkl")
+    model_path = os.path.join(model_dir, "classifier.pkl")
     joblib.dump(pipeline, model_path)
 
-    print(f"\nSignal Extractor saved at {model_path}")
-    print("Model ready for inference (used by inference.py)")
+    metadata = {
+        "classes": CLASSES,
+        "train_size": len(X_train),
+        "features": vectorizer.max_features,
+        "ngram_range": vectorizer.ngram_range,
+        "random_state": 42
+    }
+
+    metadata_path = os.path.join(model_dir, "metadata.json")
+    with open(metadata_path, "w", encoding="utf-8") as f:
+        json.dump(metadata, f, indent=2)
+
+    print(f"\nModel saved at: {model_path}")
+    print(f"Metadata saved at: {metadata_path}")
 
 
 if __name__ == "__main__":
-    train_model()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--train_path", required=True)
+    parser.add_argument("--test_path", required=False)
+    parser.add_argument("--corpus_path", required=False)
+    parser.add_argument("--model_dir", default="models")
+
+    args = parser.parse_args()
+
+    train_model(
+        train_path=args.train_path,
+        test_path=args.test_path,
+        corpus_path=args.corpus_path,
+        model_dir=args.model_dir
+    )
