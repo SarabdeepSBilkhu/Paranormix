@@ -38,7 +38,7 @@ src/tests/
 charts/
 
 # Data & Models
-data/**
+data/
 evaluation_results/
 evaluation_results/metrics_report.txt
 creepypastas.xlsx
