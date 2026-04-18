@@ -59,6 +59,16 @@ The model is trained on a strictly **balanced dataset** featuring exactly **1,00
    ```bash
    uvicorn src.backend.main:app --reload
    ```
+## ⚡ Quick Start
+To quickly run the project:
+```bash
+git clone <repo-url>
+cd Paranormix
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn src.backend.main:app --reload
+```
 
 ### Operational Map
 - `src/ml/inference.py`: Signal extraction and ML probability layer.
