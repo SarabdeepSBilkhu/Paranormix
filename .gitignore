@@ -39,8 +39,6 @@ charts/
 
 # Data & Models
 data/
-evaluation_results/
-evaluation_results/metrics_report.txt
 creepypastas.xlsx
 
 # System files
