@@ -139,33 +139,42 @@ def is_valid_narrative(text: str) -> bool:
     text_lower = text.strip().lower()
 
     # Minimum length check
-    if len(text_lower) < 20:
+    if len(text_lower) < 15:
         return False
 
-    # Subject indicators (narrative perspective)
+    # Subject indicators (narrative perspective) 
+    # Expanded to include third-person and general article subjects
     subject_indicators = [
-        r"\bi\b", r"\bmy\b", r"\bme\b", r"\bwe\b", r"\bus\b"
+        r"\bi\b", r"\bmy\b", r"\bme\b", r"\bwe\b", r"\bus\b",
+        r"\bhe\b", r"\bshe\b", r"\bthey\b", r"\bthe\b", r"\ba\b", r"\bit\b"
     ]
 
     # Action / event verbs
+    # Expanded with more descriptive and positional verbs
     action_words = [
         r"\bsaw\b", r"\bheard\b", r"\bfelt\b", r"\bnoticed\b", r"\bfound\b",
-        r"\bwoke\b", r"\bhappened\b", r"\bappeared\b", r"\bmoved\b",
-        r"\bwas\b", r"\bwere\b", r"\bhad\b", r"\bthere\s+was\b", r"\bthere\s+were\b"
+        r"\bwoke\b", r"\bhappened\b", r"\bappeared\b", r"\bmoved\b", r"\bstood\b", r"\bran\b",
+        r"\bwas\b", r"\bwere\b", r"\bhad\b", r"\bthere\s+was\b", r"\bthere\s+were\b",
+        r"\blooked\b", r"\bshowed\b", r"\bseemed\b", r"\bcame\b"
     ]
 
     # Paranormal / event indicators
+    # Expanded with more variety (orbs, spirits, footsteps, etc.)
     event_words = [
         r"\bscratch\b", r"\bblood\b", r"\bdoor\b", r"\blight\b", r"\bfigure\b",
         r"\bshadow\b", r"\bvoice\b", r"\bsound\b", r"\bmovement\b", r"\bwatching\b",
-        r"\bpresence\b", r"\bnoise\b", r"\bcold\b", r"\btemperature\b"
+        r"\bpresence\b", r"\bnoise\b", r"\bcold\b", r"\btemperature\b",
+        r"\borb\b", r"\bghost\b", r"\bspirit\b", r"\bentity\b", r"\bfootstep\b",
+        r"\bwhisper\b", r"\bkilling\b", r"\bdeath\b", r"\bdied\b"
     ]
 
     has_subject = any(re.search(pattern, text_lower) for pattern in subject_indicators)
     has_action = any(re.search(pattern, text_lower) for pattern in action_words)
     has_event = any(re.search(pattern, text_lower) for pattern in event_words)
 
-    return has_subject and has_action and has_event
+    # Required: at least 2 out of 3 major indicators (Subject, Action, Event)
+    # This allows for third-person accounts or descriptive statements without first-person subjects.
+    return (int(has_subject) + int(has_action) + int(has_event)) >= 2
 
 # ─── Routes ──────────────────────────────────────────────────────────────────
 

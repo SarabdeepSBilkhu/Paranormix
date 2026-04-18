@@ -106,9 +106,18 @@ def train_model(train_path, test_path=None, corpus_path=None, model_dir="models"
         X_test_vec = vectorizer.transform(X_test)
         y_pred = clf.predict(X_test_vec)
 
+        report = classification_report(y_test, y_pred, labels=CLASSES, zero_division=0)
         print("\nSignal Detection Performance (Balanced Test):")
         print("-" * 50)
-        print(classification_report(y_test, y_pred, labels=CLASSES, zero_division=0))
+        print(report)
+
+        # Save to evaluation_results
+        eval_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "evaluation_results")
+        os.makedirs(eval_dir, exist_ok=True)
+        report_path = os.path.join(eval_dir, "metrics_report.txt")
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write(report)
+        print(f"Metrics report saved at: {report_path}")
     else:
         print("WARNING: Test dataset not provided or not found. Skipping evaluation.")
 
