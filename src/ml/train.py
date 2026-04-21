@@ -71,11 +71,12 @@ def train_model(train_path, test_path=None, corpus_path=None, model_dir="models"
 
     # ─── Vectorizer ───────────────────────────────────────────────────────────
     vectorizer = TfidfVectorizer(
-        max_features=10000,
+        max_features=5000,
         ngram_range=(1, 2),
         tokenizer=lemmatize_tokenizer,
         token_pattern=None,
-        sublinear_tf=True
+        sublinear_tf=True,
+        min_df=2
     )
 
     print("Fitting TF-IDF on combined corpus...")
@@ -87,10 +88,12 @@ def train_model(train_path, test_path=None, corpus_path=None, model_dir="models"
     clf = SGDClassifier(
         loss="log_loss",
         penalty="l2",
-        alpha=5e-4,
+        alpha=1e-3,
         random_state=42,
         max_iter=5000,
-        class_weight="balanced"
+        class_weight="balanced",
+        early_stopping=True,
+        n_iter_no_change=10
     )
 
     print("Training signal extractor...")
