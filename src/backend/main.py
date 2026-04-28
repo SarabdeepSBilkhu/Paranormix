@@ -105,10 +105,10 @@ The 3 questions must be:
 
 CRITICAL RULES FOR THIS BLOCK:
 - This block is a MACHINE-READABLE DATA PAYLOAD. It is parsed by the UI and never shown to the user as text.
-- Do NOT introduce it with any phrase like "Here are some questions" or "You might want to ask" or anything similar.
-- Do NOT reference follow-up questions ANYWHERE in the visible response body.
+- Do NOT introduce it with any phrase like "Here are some questions" or "You might want to ask".
+- Do NOT use ANY markdown formatting (bolding, italics, etc.) on the marker line or the JSON.
 - The block must appear ONLY at the very end, with NO text before or after it.
-- Output raw JSON array only — no markdown, no formatting, no extra characters.
+- Output raw JSON array only — no markdown code fences, no formatting, no extra characters.
 
 ---
 

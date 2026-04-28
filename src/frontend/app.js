@@ -13,18 +13,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Follow-up question helpers ──
     function parseFollowUps(rawText) {
-        const marker = 'FOLLOW_UP_QUESTIONS:';
-        const idx = rawText.indexOf(marker);
+        // Robust regex to find the marker, allowing for:
+        // - Case insensitivity (i flag)
+        // - Optional markdown bolding (**)
+        // - Hyphens, underscores, or spaces
+        // - Extra whitespace before/after colon
+        const markerRegex = /\n?\s*(?:\*\*)?FOLLOW[-_ ]?UP[-_ ]?QUESTIONS\s*:(?:\*\*)?\s*/i;
+        const match = rawText.match(markerRegex);
 
         console.debug('[Paranormix] Raw LLM response:', rawText);
 
-        if (idx === -1) {
+        if (!match) {
             console.warn('[Paranormix] FOLLOW_UP_QUESTIONS block not found in response.');
             return { cleanText: rawText, questions: [] };
         }
 
+        const idx = match.index;
         const cleanText = rawText.slice(0, idx).trimEnd();
-        let jsonPart = rawText.slice(idx + marker.length).trim();
+        let jsonPart = rawText.slice(idx + match[0].length).trim();
 
         // Strip markdown code fences if the LLM wrapped the array
         jsonPart = jsonPart.replace(/^```[\w]*\n?/, '').replace(/```$/, '').trim();
@@ -39,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return { cleanText, questions: Array.isArray(questions) ? questions : [] };
         } catch (e) {
             console.error('[Paranormix] Failed to parse follow-up questions:', e, '\nRaw:', jsonPart);
+            // Return cleanText even if parsing fails to avoid showing raw block to user
             return { cleanText, questions: [] };
         }
     }
