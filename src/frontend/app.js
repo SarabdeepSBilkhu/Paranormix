@@ -13,12 +13,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Follow-up question helpers ──
     function parseFollowUps(rawText) {
+        console.log('[Paranormix] v7.2.1 Parser Active');
         // Robust regex to find the marker, allowing for:
         // - Case insensitivity (i flag)
         // - Optional markdown bolding (**)
         // - Hyphens, underscores, or spaces
         // - Extra whitespace before/after colon
-        const markerRegex = /\n?\s*(?:\*\*)?FOLLOW[-_ ]?UP[-_ ]?QUESTIONS\s*:(?:\*\*)?\s*/i;
+        const markerRegex = /\s*(?:\*\*)?FOLLOW[-_ ]?UP[-_ ]?QUESTIONS\s*:(?:\*\*)?\s*/i;
         const match = rawText.match(markerRegex);
 
         console.debug('[Paranormix] Raw LLM response:', rawText);
