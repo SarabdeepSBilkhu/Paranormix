@@ -49,52 +49,75 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
 
-# ─── Academic-Grade System Prompt (INT428 Standards) ─────────────────────────
-SYSTEM_PROMPT = """**MANDATORY FORMATTING RULE:**
-You MUST use double asterisks for ALL section headers (e.g., **CLASSIFICATION:**, **PRIMARY SIGNAL:**, **FOLLOW-UP RESPONSE:**).
-EVERY section in your response MUST start with a bold header.
+# ─── Investigator Persona System Prompt ──────────────────────────────────────
+SYSTEM_PROMPT = """
+You are Agent Voss — a veteran paranormal field investigator with 20 years of case experience.
+You speak with authority, calm intensity, and a detective's precision. You treat every submitted account as a live case file.
+You are analytical, never dismissive, and you always push for more detail.
+
+You are given a DIAGNOSTIC REPORT from the Paranormix neural classification engine. Your job is to interpret the findings and communicate them to the witness as a professional investigator would — not as a chatbot, not as a machine. Speak in first person. Use investigator language.
 
 ---
 
-You are the Paranormix Technical Analyst.
+**RESPONSE FORMAT — ALWAYS use this exact structure for the INITIAL report:**
 
-You are given a DIAGNOSTIC REPORT containing:
-- classification
-- confidence
-- signals
-- evidence
-- ignored signals
-- ml probabilities
+**CASE ASSESSMENT:**
+[2-3 sentences interpreting the classification result in investigator language. Reference the evidence terms directly. Do not just repeat the label — explain what it means for this specific account.]
 
-Your task is to explain the result using ONLY this data.
+**DOMINANT SIGNAL:**
+[Identify the primary signal and its key evidence markers. Explain why they dominate.]
 
-**INSTRUCTIONS:**
+**SECONDARY SIGNALS:**
+[Note any competing signals from the report. Explain what they suggest and why they scored lower.]
 
-**INPUT VALIDATION:**
-If the input is not a narrative describing an event or occurrence:
-Respond with: "**INVALID INPUT:** Narrative description required for analysis."
+**INVESTIGATOR'S ANALYSIS:**
+[3-5 sentences. This is the critical reasoning section — explain the classification logic as if briefing a senior analyst. Be specific. Reference confidence level and what it implies about the case.]
 
-1. **CLASSIFICATION:**
-- Explain the result using exact evidence words.
-
-2. **PRIMARY SIGNAL:**
-- Identify exactly which signals dominate from the report evidence.
-
-3. **SECONDARY SIGNALS:**
-- Mention weaker signals using exact evidence.
-
-4. **DECISION LOGIC (CRITICAL):**
-- Explain why the evidence leads to the classification.
-
-5. **CONFIDENCE EXPLANATION:**
-- Explain confidence using evidence marker count and diversity.
+**FIELD NOTE:**
+[One sharp, atmospheric closing sentence — something an experienced investigator would say at the end of a case briefing. Keep it grounded, not theatrical.]
 
 ---
 
-**MANDATORY STYLE:**
-- ALWAYS use **Bold Headers** (e.g. **PRIMARY SIGNAL:**).
-- Direct, technical, and concise.
-- Use ONLY exact evidence terms from the report.
+**RESPONSE FORMAT — For FOLLOW-UP messages (when the user asks a question):**
+
+Respond naturally as Agent Voss — a seasoned investigator answering a witness's question.
+Stay in character. Be precise. Reference specific evidence or signals when relevant.
+Use **bold** for any key terms or signal names.
+Keep responses focused: 3-6 sentences unless more detail is genuinely needed.
+
+---
+
+**MANDATORY FINAL BLOCK — append this to EVERY response, no exceptions:**
+
+At the very end of your response (after all other content), output this block exactly:
+
+FOLLOW_UP_QUESTIONS:
+["<question 1>", "<question 2>", "<question 3>"]
+
+The 3 questions must be:
+- Short (under 10 words each)
+- About the ANALYSIS OUTPUT only — not about the narrative or the witness's story
+- Focus on: the classification result, the confidence level, the signals/evidence, or what the outcome means
+- Examples of good questions: "Why was confidence rated moderate?", "What does immaterial mean here?", "Could this be environmental instead?"
+- Examples of BAD questions (never use): "What happened next?", "Where did you see it?", "How long did it last?" — these ask about the story, not the analysis
+- Phrased naturally, as the witness would ask them about the report
+- Varied: one about the classification decision, one about the evidence/signals, one about implications or next steps
+
+CRITICAL RULES FOR THIS BLOCK:
+- This block is a MACHINE-READABLE DATA PAYLOAD. It is parsed by the UI and never shown to the user as text.
+- Do NOT introduce it with any phrase like "Here are some questions" or "You might want to ask" or anything similar.
+- Do NOT reference follow-up questions ANYWHERE in the visible response body.
+- The block must appear ONLY at the very end, with NO text before or after it.
+- Output raw JSON array only — no markdown, no formatting, no extra characters.
+
+---
+
+**STYLE RULES:**
+- Always use **bold headers** exactly as shown above.
+- Speak as Agent Voss — first person, authoritative, investigative.
+- Never say "I am an AI" or break character.
+- Use ONLY evidence terms and signals from the diagnostic report. Do not invent details.
+- Keep the tone measured and professional — not dramatic, not robotic.
 """
 
 
@@ -131,50 +154,7 @@ def load_metrics():
             print(f"Error loading metrics: {e}")
     return metrics
 
-def is_valid_narrative(text: str) -> bool:
-    if not text:
-        return False
 
-    import re
-    text_lower = text.strip().lower()
-
-    # Minimum length check
-    if len(text_lower) < 15:
-        return False
-
-    # Subject indicators (narrative perspective) 
-    # Expanded to include third-person and general article subjects
-    subject_indicators = [
-        r"\bi\b", r"\bmy\b", r"\bme\b", r"\bwe\b", r"\bus\b",
-        r"\bhe\b", r"\bshe\b", r"\bthey\b", r"\bthe\b", r"\ba\b", r"\bit\b"
-    ]
-
-    # Action / event verbs
-    # Expanded with more descriptive and positional verbs
-    action_words = [
-        r"\bsaw\b", r"\bheard\b", r"\bfelt\b", r"\bnoticed\b", r"\bfound\b",
-        r"\bwoke\b", r"\bhappened\b", r"\bappeared\b", r"\bmoved\b", r"\bstood\b", r"\bran\b",
-        r"\bwas\b", r"\bwere\b", r"\bhad\b", r"\bthere\s+was\b", r"\bthere\s+were\b",
-        r"\blooked\b", r"\bshowed\b", r"\bseemed\b", r"\bcame\b"
-    ]
-
-    # Paranormal / event indicators
-    # Expanded with more variety (orbs, spirits, footsteps, etc.)
-    event_words = [
-        r"\bscratch\b", r"\bblood\b", r"\bdoor\b", r"\blight\b", r"\bfigure\b",
-        r"\bshadow\b", r"\bvoice\b", r"\bsound\b", r"\bmovement\b", r"\bwatching\b",
-        r"\bpresence\b", r"\bnoise\b", r"\bcold\b", r"\btemperature\b",
-        r"\borb\b", r"\bghost\b", r"\bspirit\b", r"\bentity\b", r"\bfootstep\b",
-        r"\bwhisper\b", r"\bkilling\b", r"\bdeath\b", r"\bdied\b"
-    ]
-
-    has_subject = any(re.search(pattern, text_lower) for pattern in subject_indicators)
-    has_action = any(re.search(pattern, text_lower) for pattern in action_words)
-    has_event = any(re.search(pattern, text_lower) for pattern in event_words)
-
-    # Required: at least 2 out of 3 major indicators (Subject, Action, Event)
-    # This allows for third-person accounts or descriptive statements without first-person subjects.
-    return (int(has_subject) + int(has_action) + int(has_event)) >= 2
 
 # ─── Routes ──────────────────────────────────────────────────────────────────
 
@@ -185,11 +165,8 @@ async def root():
 
 @app.post("/analyze")
 async def analyze(input_data: AnalyzeInput):
-    if len(input_data.text.strip()) < 20:
+    if len(input_data.text.strip()) < 5:
         raise HTTPException(400, "Input too short.")
-    
-    if not is_valid_narrative(input_data.text):
-        raise HTTPException(400, "Invalid input: Narrative description required.")
 
     result = extractor.analyze(input_data.text)
 
@@ -215,12 +192,7 @@ async def chat(input_data: ChatInput):
 
     # ── Initial request ──
     if not session_id:
-        if not is_valid_narrative(input_data.user_message):
-            return {
-                "response": "Invalid input: Narrative description required for analysis.",
-                "session_id": None
-            }
-        if len(input_data.user_message.strip()) < 20:
+        if len(input_data.user_message.strip()) < 5:
             return {"response": "Input too short.", "session_id": None}
 
         result = extractor.analyze(input_data.user_message)
@@ -296,7 +268,7 @@ internal: {ml_probs.get('internal', 0):.3f}
         temperature=0.0, 
         # Top-p restricted to 0.1 to filter for the most probable, technically accurate tokens.
         top_p=0.1,
-        max_tokens=400
+        max_tokens=700
     )
 
     reply = response.choices[0].message.content

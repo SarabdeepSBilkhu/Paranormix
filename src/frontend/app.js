@@ -7,8 +7,62 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetBtn = document.getElementById('resetBtn');
     const dashboardTemplate = document.getElementById('dashboardTemplate');
     const analystStatus = document.getElementById('analystStatus');
+    const suggestedPrompts = document.getElementById('suggestedPrompts');
 
     let sessionId = null;
+
+    // ── Follow-up question helpers ──
+    function parseFollowUps(rawText) {
+        const marker = 'FOLLOW_UP_QUESTIONS:';
+        const idx = rawText.indexOf(marker);
+
+        console.debug('[Paranormix] Raw LLM response:', rawText);
+
+        if (idx === -1) {
+            console.warn('[Paranormix] FOLLOW_UP_QUESTIONS block not found in response.');
+            return { cleanText: rawText, questions: [] };
+        }
+
+        const cleanText = rawText.slice(0, idx).trimEnd();
+        let jsonPart = rawText.slice(idx + marker.length).trim();
+
+        // Strip markdown code fences if the LLM wrapped the array
+        jsonPart = jsonPart.replace(/^```[\w]*\n?/, '').replace(/```$/, '').trim();
+
+        // Normalise curly/smart quotes to straight quotes
+        jsonPart = jsonPart.replace(/[‘’]/g, "'").replace(/[“”]/g, '"');
+
+        console.debug('[Paranormix] Parsed JSON part:', jsonPart);
+
+        try {
+            const questions = JSON.parse(jsonPart);
+            return { cleanText, questions: Array.isArray(questions) ? questions : [] };
+        } catch (e) {
+            console.error('[Paranormix] Failed to parse follow-up questions:', e, '\nRaw:', jsonPart);
+            return { cleanText, questions: [] };
+        }
+    }
+
+    function renderFollowUps(questions) {
+        suggestedPrompts.innerHTML = '';
+        if (!questions || questions.length === 0) return;
+
+        const label = document.createElement('span');
+        label.className = 'chip-label';
+        label.textContent = 'Ask:';
+        suggestedPrompts.appendChild(label);
+
+        questions.forEach(q => {
+            const chip = document.createElement('button');
+            chip.className = 'prompt-chip';
+            chip.textContent = q;
+            chip.addEventListener('click', () => {
+                userInput.value = q;
+                sendMessage();
+            });
+            suggestedPrompts.appendChild(chip);
+        });
+    }
 
     async function sendMessage(manualText = null) {
         const message = manualText || userInput.value.trim();
@@ -18,6 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         appendMessage('user', message);
         userInput.value = '';
+        suggestedPrompts.innerHTML = ''; // clear chips while waiting
         setLoading(true);
 
         try {
@@ -39,7 +94,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.session_id) sessionId = data.session_id;
 
-            appendMessage('ai', data.response || data.detail || "No response");
+            const rawResponse = data.response || data.detail || 'No response';
+            const { cleanText, questions } = parseFollowUps(rawResponse);
+
+            appendMessage('ai', cleanText);
+            renderFollowUps(questions);
 
             // Render dashboard ONLY on initial
             if (isInitial && data.ml_data) {
@@ -196,9 +255,10 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionId = null;
         chatContainer.innerHTML = '';
         diagnosticDashboard.innerHTML = '';
+        suggestedPrompts.innerHTML = '';
         const mainGrid = document.getElementById('mainGrid');
         if (mainGrid) mainGrid.classList.remove('axial-active');
-        appendMessage('ai', 'System reset.');
+        appendMessage('ai', 'Case file cleared. Submit a new account to begin.');
     }
 
     sendBtn.addEventListener('click', () => sendMessage());
@@ -212,5 +272,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     resetBtn.addEventListener('click', reset);
 
-    appendMessage('ai', 'Enter narrative for analysis.');
+    appendMessage('ai', 'Case file open. Describe the occurrence, and I will take it from there.');
 });
