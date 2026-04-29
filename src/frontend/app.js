@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dashboardTemplate = document.getElementById('dashboardTemplate');
     const analystStatus = document.getElementById('analystStatus');
     const suggestedPrompts = document.getElementById('suggestedPrompts');
+    const themeToggle = document.getElementById('themeToggle');
 
     let sessionId = null;
 
@@ -279,6 +280,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     resetBtn.addEventListener('click', reset);
+
+    // ── Theme Toggle Logic ──
+    function setTheme(theme) {
+        if (theme === 'light') {
+            document.body.classList.add('light-mode');
+            themeToggle.textContent = 'Dark Mode';
+            localStorage.setItem('theme', 'light');
+        } else {
+            document.body.classList.remove('light-mode');
+            themeToggle.textContent = 'Light Mode';
+            localStorage.setItem('theme', 'dark');
+        }
+    }
+
+    themeToggle.addEventListener('click', () => {
+        const isLight = document.body.classList.contains('light-mode');
+        setTheme(isLight ? 'dark' : 'light');
+    });
+
+    // Initialize theme
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    setTheme(savedTheme);
 
     appendMessage('ai', 'Case file open. Describe the occurrence, and I will take it from there.');
 });
